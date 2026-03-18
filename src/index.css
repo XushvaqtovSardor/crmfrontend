@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f4f5f9;
+  --bg-soft: #eceef5;
+  --surface: #ffffff;
+  --surface-2: #f8f9fc;
+  --text: #141b2d;
+  --text-muted: #5e677f;
+  --brand: #7e56d8;
+  --brand-strong: #5e35c1;
+  --border: #dde1eb;
+  --ring: #b7a3ec;
+}
+
+.theme-night {
+  --bg: #10152a;
+  --bg-soft: #151c36;
+  --surface: #1a2241;
+  --surface-2: #1f2950;
+  --text: #f2f4ff;
+  --text-muted: #adb7de;
+  --brand: #9a7df2;
+  --brand-strong: #7e56d8;
+  --border: #2a3665;
+  --ring: #5f4ab3;
+}
+
+body {
+  margin: 0;
+  font-family: 'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(circle at 0% -10%, color-mix(in srgb, var(--brand) 14%, transparent) 0%, transparent 28%),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--brand) 10%, transparent) 0%, transparent 35%),
+    linear-gradient(145deg, var(--bg) 0%, var(--bg-soft) 100%);
+  color: var(--text);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.modern-shell {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.fancy-enter {
+  animation: riseIn 500ms ease-out both;
+}
+
+.fancy-enter-delay {
+  animation: riseIn 700ms ease-out both;
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
