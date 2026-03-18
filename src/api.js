@@ -5,7 +5,7 @@ import axios from 'axios';
 // 2) localhost in dev
 // 3) relative /api/v1 for proxy-based deployments
 const envApiUrl = import.meta.env.VITE_API_URL?.trim();
-const fallbackHost = import.meta.env.DEV ? 'http://localhost:3000' : '';
+const fallbackHost = import.meta.env.DEV ? 'http://188.166.234.88:8002/api/v1' : '';
 const rawApiUrl = envApiUrl || fallbackHost;
 
 const API_URL = rawApiUrl
