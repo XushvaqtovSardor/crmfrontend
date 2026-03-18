@@ -13,7 +13,6 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Handles authentication request and session initialization.
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -23,13 +22,11 @@ export default function Login() {
       const res = await api.post('/auth/login', { email, password });
       const authData = res.data?.data;
 
-      // Guards against malformed backend response shape.
       if (!authData?.accessToken || !authData?.user) {
         setError('Serverdan noto\'g\'ri login javobi keldi');
         return;
       }
 
-      // Saves session in AuthContext and moves user to protected area.
       login(authData);
       navigate('/dashboard');
     } catch {

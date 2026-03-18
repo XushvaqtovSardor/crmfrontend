@@ -20,7 +20,6 @@ import SettingsPage from './components/SettingsPage.jsx';
 import MyGroupsPage from './components/MyGroupsPage.jsx';
 import LessonsPage from './components/LessonsPage.jsx';
 
-// Chooses dashboard component based on authenticated user role.
 function DashboardRouter() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" />;
@@ -33,7 +32,6 @@ function DashboardRouter() {
   }
 }
 
-// Wraps every protected page with both auth guard and shared layout shell.
 function AuthenticatedLayout({ children, allowedRoles }) {
   return (
     <ProtectedRoute allowedRoles={allowedRoles}>
@@ -47,18 +45,15 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public routes */}
           <Route path="/login" element={<LoginGuard />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
 
-          {/* Shared dashboard entry */}
           <Route path="/dashboard" element={
             <AuthenticatedLayout>
               <DashboardRouter />
             </AuthenticatedLayout>
           } />
 
-          {/* Superadmin/Admin routes */}
           <Route path="/teachers" element={
             <AuthenticatedLayout allowedRoles={['SUPERADMIN', 'ADMIN']}>
               <TeachersPage />
@@ -90,14 +85,12 @@ function App() {
             </AuthenticatedLayout>
           } />
 
-          {/* Teacher-only routes */}
           <Route path="/lessons" element={
             <AuthenticatedLayout allowedRoles={['TEACHER']}>
               <LessonsPage />
             </AuthenticatedLayout>
           } />
 
-          {/* Teacher + Student shared routes */}
           <Route path="/my-groups" element={
             <AuthenticatedLayout allowedRoles={['TEACHER', 'STUDENT']}>
               <MyGroupsPage />
@@ -119,7 +112,6 @@ function App() {
             </AuthenticatedLayout>
           } />
 
-          {/* Fallback route */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>
@@ -127,7 +119,6 @@ function App() {
   );
 }
 
-// Prevents showing login page to already-authenticated users.
 function LoginGuard() {
   const { user } = useAuth();
   if (user) return <Navigate to="/dashboard" replace />;

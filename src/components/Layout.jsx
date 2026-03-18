@@ -55,7 +55,6 @@ export default function Layout({ children }) {
     return saved === 'night';
   });
 
-  // Persists selected theme in localStorage and updates body class.
   const toggleTheme = () => {
     const next = !dark;
     setDark(next);
@@ -67,7 +66,6 @@ export default function Layout({ children }) {
   if (dark) document.body.classList.add('theme-night');
   else document.body.classList.remove('theme-night');
 
-  // Returns menu list by role; unknown roles get an empty menu.
   const items = SIDEBAR_ITEMS[user?.role] || [];
 
   const handleLogout = () => {
@@ -76,7 +74,6 @@ export default function Layout({ children }) {
   };
 
   return (
-    // Main app shell = sidebar + topbar + page content slot.
     <div className="modern-shell min-h-screen flex fancy-enter">
 
       {mobileOpen && (
