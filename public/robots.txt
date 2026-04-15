@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+
+# Private dashboard/application routes should not be crawled
+Disallow: /dashboard
+Disallow: /teachers
+Disallow: /students
+Disallow: /groups
+Disallow: /courses
+Disallow: /rooms
+Disallow: /finance
+Disallow: /lessons
+Disallow: /my-groups
+Disallow: /my-finance
+Disallow: /videos
+Disallow: /homeworks
+Disallow: /progress
+Disallow: /settings
+Disallow: /unauthorized
+
+# Sitemap location
+Sitemap: https://lurnex.tech/sitemap.xml
+
+# Optional: block internal/private routes if needed in future
+# Disallow: /dashboard
+# Disallow: /settings
