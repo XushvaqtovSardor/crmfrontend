@@ -2,37 +2,42 @@ import { useState, useEffect } from 'react';
 import { Layers3, Users, Clock, Calendar, BookOpen, Loader2 } from 'lucide-react';
 import { useAuth } from '../AuthContext.jsx';
 import api from '../api.js';
+import { getApiErrorMessage } from '../utils/http.js';
 
 const DAY_LABELS = { MONDAY: 'Du', TUESDAY: 'Se', WEDNESDAY: 'Cho', THURSDAY: 'Pa', FRIDAY: 'Ju', SATURDAY: 'Sha', SUNDAY: 'Ya' };
 
-async function fetchGroups(user) {
-  const res = await api.get('/groups?page=1&limit=100');
-  const allGroups = res.data?.data?.data || [];
+function getGroupStudentCount(group) {
+  if (typeof group?._count?.studentGroup === 'number') return group._count.studentGroup;
+  if (Array.isArray(group?.studentGroup)) return group.studentGroup.length;
+  return 0;
+}
 
-  if (user?.role === 'TEACHER') {
-    return allGroups.filter((group) => group.teacherId === user.id);
+async function fetchGroups(user) {
+  if (!user?.id) {
+    return [];
   }
 
-  return allGroups.filter((group) =>
-    group.studentGroup?.some((studentGroup) => studentGroup.studentId === user?.id)
-  );
+  const res = await api.get('/groups/my');
+  return res.data?.data || [];
 }
 
 export default function MyGroupsPage() {
   const { user } = useAuth();
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
 
     const loadGroups = async () => {
       setLoading(true);
+      setError('');
       try {
         const nextGroups = await fetchGroups(user);
         if (active) setGroups(nextGroups);
       } catch (e) {
-        console.error(e);
+        if (active) setError(getApiErrorMessage(e, 'Guruhlarni yuklab bo\'lmadi'));
         if (active) setGroups([]);
       } finally {
         if (active) setLoading(false);
@@ -53,6 +58,12 @@ export default function MyGroupsPage() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
         {user?.role === 'TEACHER' ? 'Mening guruhlarim' : 'Mening guruhlarim'}
       </h1>
+
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       {groups.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -86,7 +97,7 @@ export default function MyGroupsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Users size={14} className="text-gray-400" />
-                  <span>{g.studentGroup?.length || 0} ta talaba</span>
+                  <span>{getGroupStudentCount(g)} ta talaba</span>
                 </div>
               </div>
             </div>

@@ -1,8 +1,13 @@
 import { ShieldX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext.jsx';
+import { getDefaultRouteByRole } from '../utils/roles.js';
 
 export default function Unauthorized() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const fallbackPath = user ? getDefaultRouteByRole(user.role) : '/login';
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -11,7 +16,7 @@ export default function Unauthorized() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Ruxsat yo'q</h1>
         <p className="text-gray-500 mb-6">Bu sahifaga kirish huquqingiz yo'q</p>
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate(fallbackPath)}
           className="px-6 py-3 bg-violet-500 text-white rounded-xl font-semibold hover:bg-violet-600 transition"
         >
           Bosh sahifaga qaytish

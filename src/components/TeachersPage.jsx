@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Search, Edit3, Trash2, X, Loader2, Upload, Download, RefreshCcw } from 'lucide-react';
+import { Plus, Search, Edit3, Trash2, X, Loader2, Upload, Download, RefreshCcw, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
 
@@ -12,6 +13,7 @@ function normalizeList(payload) {
 }
 
 export default function TeachersPage() {
+  const navigate = useNavigate();
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -198,6 +200,7 @@ export default function TeachersPage() {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex gap-1">
+                        <button onClick={() => navigate(`/teachers/${t.id}`)} className="w-8 h-8 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition"><Eye size={14} /></button>
                         <button onClick={() => openEdit(t)} className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 transition"><Edit3 size={14} /></button>
                         <button onClick={() => remove(t.id)} className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition"><Trash2 size={14} /></button>
                       </div>

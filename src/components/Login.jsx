@@ -3,6 +3,8 @@ import { Eye, EyeOff, Loader2, ArrowRight, ShieldCheck, Sparkles } from 'lucide-
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import api from '../api.js';
+import { getApiErrorMessage } from '../utils/http.js';
+import { getDefaultRouteByRole, normalizeRole } from '../utils/roles.js';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -27,10 +29,22 @@ export default function Login() {
         return;
       }
 
-      login(authData);
-      navigate('/dashboard');
-    } catch {
-      setError("Xatolik yuz berdi. Qayta urinib ko'ring.");
+      const normalizedRole = normalizeRole(authData.user.role);
+      if (!normalizedRole) {
+        setError('Foydalanuvchi roli aniqlanmadi');
+        return;
+      }
+
+      login({
+        ...authData,
+        user: {
+          ...authData.user,
+          role: normalizedRole,
+        },
+      });
+      navigate(getDefaultRouteByRole(normalizedRole), { replace: true });
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Xatolik yuz berdi. Qayta urinib ko'ring."));
     } finally {
       setLoading(false);
     }
