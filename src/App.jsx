@@ -68,7 +68,8 @@ function App() {
       <AuthProvider>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/login" element={<LoginGuard />} />
+            <Route path="/login" element={<LoginGuard mode="login" />} />
+            <Route path="/register" element={<LoginGuard mode="register" />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
 
             <Route path="/dashboard" element={
@@ -181,10 +182,10 @@ function App() {
   );
 }
 
-function LoginGuard() {
+function LoginGuard({ mode = 'login' }) {
   const { user } = useAuth();
   if (user) return <Navigate to={getDefaultRouteByRole(user.role)} replace />;
-  return <Login />;
+  return <Login initialMode={mode} />;
 }
 
 export default App;

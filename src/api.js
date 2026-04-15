@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { normalizeRole } from './utils/roles.js';
 const envApiUrl = import.meta.env.VITE_API_URL?.trim();
-const fallbackHost = import.meta.env.DEV ? 'http://188.166.234.88:8002/api/v1' : '';
-const rawApiUrl = envApiUrl || fallbackHost;
+const rawApiUrl = envApiUrl;
 const API_URL = rawApiUrl
     ? (rawApiUrl.includes('/api/v1')
         ? rawApiUrl.replace(/\/$/, '')
