@@ -85,6 +85,12 @@ export default function Layout({ children }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+    return window.matchMedia('(min-width: 1024px)').matches;
+  });
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const quickActionsRef = useRef(null);
   const [dark, setDark] = useState(() => {
@@ -95,15 +101,57 @@ export default function Layout({ children }) {
     const next = !dark;
     setDark(next);
     localStorage.setItem('erp_theme', next ? 'night' : 'day');
-    if (next)
-      document.body.classList.add('theme-night');
-    else
-      document.body.classList.remove('theme-night');
   };
-  if (dark)
-    document.body.classList.add('theme-night');
-  else
-    document.body.classList.remove('theme-night');
+
+  useEffect(() => {
+    document.body.classList.toggle('theme-night', dark);
+    return () => {
+      document.body.classList.remove('theme-night');
+    };
+  }, [dark]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+    const syncDesktopState = (matches) => {
+      setIsDesktop(matches);
+      if (matches) {
+        setMobileOpen(false);
+      }
+    };
+
+    syncDesktopState(mediaQuery.matches);
+
+    const handleChange = (event) => {
+      syncDesktopState(event.matches);
+    };
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+      setMobileOpen(false);
+      setQuickActionsOpen(false);
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
   const normalizedRole = normalizeRole(user?.role);
   const items = SIDEBAR_ITEMS[normalizedRole] || [];
   const quickActions = useMemo(() => {
@@ -132,6 +180,7 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     setQuickActionsOpen(false);
+    setMobileOpen(false);
   }, [location.pathname]);
 
   const handleLogout = () => {
@@ -148,7 +197,7 @@ export default function Layout({ children }) {
 
 
 
-    {mobileOpen && (<div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />)}
+    {mobileOpen && !isDesktop && (<div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />)}
 
 
 
