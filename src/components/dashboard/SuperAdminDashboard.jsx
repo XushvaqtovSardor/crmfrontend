@@ -323,7 +323,7 @@ export default function SuperAdminDashboard() {
       <div>
         <div className="mb-6">
           <h1 className="text-4xl font-bold text-gray-900">Salom, {user?.fullName}!</h1>
-          <p className="text-gray-500 mt-2">EduCoin platformasiga xush kelibsiz!</p>
+          <p className="text-gray-500 mt-2">CRM platformasiga xush kelibsiz!</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
@@ -352,7 +352,7 @@ export default function SuperAdminDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <div>
           <h1 className="text-4xl lg:text-[48px] font-bold text-gray-900">Salom, {user?.fullName}!</h1>
-          <p className="text-gray-500 mt-2 text-lg">EduCoin platformasidagi umumiy ko'rsatkichlar</p>
+          <p className="text-gray-500 mt-2 text-lg">CRM platformasidagi umumiy ko'rsatkichlar</p>
         </div>
         <button
           type="button"

@@ -162,7 +162,7 @@ export default function Dashboard() {
         <div className="mb-6">
           <h2 className="text-4xl font-bold mb-2">Salom, Islombek Baxromov!</h2>
           <p className="text-gray-500 text-lg">
-            EduCoin platformasiga xush kelibsiz!
+            CRM platformasiga xush kelibsiz!
           </p>
         </div>
 

@@ -182,7 +182,7 @@ export default function Layout({ children }) {
 
           </div>
 
-          {sidebarOpen && <span className="text-[33px] font-extrabold italic tracking-tight" style={{ color: '#7e56d8' }}>EduCoin</span>}
+          {sidebarOpen && <span className="text-[33px] font-extrabold italic tracking-tight" style={{ color: '#7e56d8' }}>CRM</span>}
 
         </div>
 
