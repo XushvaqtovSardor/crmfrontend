@@ -62,6 +62,16 @@ function formatCurrency(value) {
   return `${asNumber(value).toLocaleString('uz-UZ')} so'm`;
 }
 
+const compactNumberFormatter = new Intl.NumberFormat('uz-UZ', {
+  notation: 'compact',
+  compactDisplay: 'short',
+  maximumFractionDigits: 1,
+});
+
+function formatCompactNumber(value) {
+  return compactNumberFormatter.format(asNumber(value));
+}
+
 function formatDateCard(date) {
   return {
     day: String(date.getDate()).padStart(2, '0'),
@@ -85,13 +95,18 @@ function resolveGroupFee(group, fallbackPerStudent) {
   return coursePrice * fallbackPerStudent;
 }
 
-function buildChartPoints(values, width, height, pad) {
+function buildChartPoints(values, width, height, padding) {
   const max = Math.max(...values, 1);
-  const innerWidth = width - pad * 2;
-  const innerHeight = height - pad * 2;
+  const left = padding?.left ?? 28;
+  const right = padding?.right ?? left;
+  const top = padding?.top ?? 28;
+  const bottom = padding?.bottom ?? top;
+  const innerWidth = width - left - right;
+  const innerHeight = height - top - bottom;
+
   return values.map((value, index) => {
-    const x = pad + (index / (values.length - 1 || 1)) * innerWidth;
-    const y = height - pad - (value / max) * innerHeight;
+    const x = left + (index / (values.length - 1 || 1)) * innerWidth;
+    const y = height - bottom - (value / max) * innerHeight;
     return { x, y, value };
   });
 }
@@ -120,20 +135,27 @@ function StatCard({ title, value, icon: Icon, color }) {
 function AccordionCard({ title, open, onToggle, right, children }) {
   return (
     <section className="bg-white rounded-2xl border border-[#e6e9f2] shadow-sm overflow-hidden">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full px-6 py-5 flex items-center justify-between text-left"
-      >
-        <h3 className="text-2xl lg:text-[30px] leading-tight font-semibold text-gray-900">{title}</h3>
+      <div className="w-full px-6 py-5 flex items-center justify-between text-left gap-3">
+        <button type="button" onClick={onToggle} className="flex-1 text-left">
+          <h3 className="text-2xl lg:text-[30px] leading-tight font-semibold text-gray-900">{title}</h3>
+        </button>
+
         <div className="flex items-center gap-3">
-          {right}
-          <ChevronDown
-            className={`text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`}
-            size={20}
-          />
+          {right && <div onClick={(event) => event.stopPropagation()}>{right}</div>}
+
+          <button
+            type="button"
+            onClick={onToggle}
+            className="p-1 -m-1 rounded-md hover:bg-gray-100"
+            aria-label={`${title} bo'limini ${open ? 'yopish' : 'ochish'}`}
+          >
+            <ChevronDown
+              className={`text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`}
+              size={20}
+            />
+          </button>
         </div>
-      </button>
+      </div>
       {open && <div className="px-6 pb-6">{children}</div>}
     </section>
   );
@@ -179,30 +201,43 @@ function PaymentRing({ percent }) {
   );
 }
 
-function ProfitLineChart({ values }) {
+function ProfitLineChart({ values, year }) {
   const width = 760;
-  const height = 250;
-  const pad = 28;
-  const points = buildChartPoints(values, width, height, pad);
+  const height = 260;
+  const chartPadding = {
+    left: 82,
+    right: 24,
+    top: 20,
+    bottom: 34,
+  };
+  const points = buildChartPoints(values, width, height, chartPadding);
   const maxValue = Math.max(...values, 1);
+  const axisHeight = height - chartPadding.top - chartPadding.bottom;
 
   const linePath = points
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
     .join(' ');
 
-  const areaPath = `${linePath} L ${width - pad} ${height - pad} L ${pad} ${height - pad} Z`;
+  const areaPath = `${linePath} L ${width - chartPadding.right} ${height - chartPadding.bottom} L ${chartPadding.left} ${height - chartPadding.bottom} Z`;
 
   return (
     <div className="rounded-2xl border border-[#edf0f7] bg-[#fbfcff] p-4 overflow-x-auto">
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full min-w-[640px] h-[260px]">
         {[0, 1, 2, 3].map((line) => {
-          const y = pad + (line * (height - pad * 2)) / 3;
+          const y = chartPadding.top + (line * axisHeight) / 3;
           const value = Math.round(maxValue - (line * maxValue) / 3);
           return (
             <g key={line}>
-              <line x1={pad} x2={width - pad} y1={y} y2={y} stroke="#e9edf7" strokeWidth="1" />
-              <text x="4" y={y + 4} fontSize="12" fill="#94a3b8">
-                {value.toLocaleString('uz-UZ')}
+              <line
+                x1={chartPadding.left}
+                x2={width - chartPadding.right}
+                y1={y}
+                y2={y}
+                stroke="#e9edf7"
+                strokeWidth="1"
+              />
+              <text x={chartPadding.left - 10} y={y + 4} textAnchor="end" fontSize="12" fill="#94a3b8">
+                {formatCompactNumber(value)}
               </text>
             </g>
           );
@@ -212,14 +247,17 @@ function ProfitLineChart({ values }) {
         <path d={linePath} fill="none" stroke="#22c55e" strokeWidth="4" strokeLinecap="round" />
 
         {points.map((point, idx) => (
-          <circle key={MONTH_LABELS[idx]} cx={point.x} cy={point.y} r="5" fill="#ffffff" stroke="#22c55e" strokeWidth="3" />
+          <g key={MONTH_LABELS[idx]}>
+            <circle cx={point.x} cy={point.y} r="5" fill="#ffffff" stroke="#22c55e" strokeWidth="3" />
+            <title>{`${MONTH_LABELS[idx]} ${year}: ${formatCurrency(point.value)}`}</title>
+          </g>
         ))}
 
         {points.map((point, idx) => (
           <text
             key={`${MONTH_LABELS[idx]}-label`}
             x={point.x}
-            y={height - 4}
+            y={height - 6}
             textAnchor="middle"
             fontSize="13"
             fill="#94a3b8"
@@ -504,7 +542,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 items-start gap-4 mb-4">
         <AccordionCard
           title="Joriy oy uchun to'lovlar"
           open={expanded.payments}
@@ -556,7 +594,7 @@ export default function AdminDashboard() {
             </select>
           )}
         >
-          <ProfitLineChart values={monthlyProfit} />
+          <ProfitLineChart values={monthlyProfit} year={selectedYear} />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
             <div className="rounded-xl bg-[#f8fbff] border border-[#e8eef9] p-4">

@@ -71,7 +71,7 @@ export default function Dashboard() {
             <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center text-white font-bold text-lg shadow">
               E
             </div>
-            <h1 className="text-2xl font-bold text-violet-500">EduCoin</h1>
+            <h1 className="text-2xl font-bold text-violet-500">CRM</h1>
           </div>
 
           

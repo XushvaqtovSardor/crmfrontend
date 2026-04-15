@@ -58,17 +58,24 @@ function StatCard({ title, value, icon: Icon, color }) {
 function AccordionCard({ title, open, onToggle, right, children }) {
   return (
     <section className="bg-white rounded-2xl border border-[#e6e9f2] shadow-sm overflow-hidden">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full px-6 py-5 flex items-center justify-between text-left"
-      >
-        <h3 className="text-2xl lg:text-[30px] leading-tight font-semibold text-gray-900">{title}</h3>
+      <div className="w-full px-6 py-5 flex items-center justify-between text-left gap-3">
+        <button type="button" onClick={onToggle} className="flex-1 text-left">
+          <h3 className="text-2xl lg:text-[30px] leading-tight font-semibold text-gray-900">{title}</h3>
+        </button>
+
         <div className="flex items-center gap-3">
-          {right}
-          <ChevronDown className={`text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} size={20} />
+          {right && <div onClick={(event) => event.stopPropagation()}>{right}</div>}
+
+          <button
+            type="button"
+            onClick={onToggle}
+            className="p-1 -m-1 rounded-md hover:bg-gray-100"
+            aria-label={`${title} bo'limini ${open ? 'yopish' : 'ochish'}`}
+          >
+            <ChevronDown className={`text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} size={20} />
+          </button>
         </div>
-      </button>
+      </div>
       {open && <div className="px-6 pb-6">{children}</div>}
     </section>
   );
@@ -369,7 +376,7 @@ export default function SuperAdminDashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 items-start gap-4 mb-4">
         <AccordionCard
           title="Topshiriqlar holati"
           open={expanded.submissions}
