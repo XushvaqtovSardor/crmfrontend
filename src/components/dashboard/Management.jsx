@@ -70,7 +70,7 @@ export default function ManagementPage() {
               E
             </div>
             <Typography className="!text-[20px] !font-bold !text-[#6c4cf6]">
-              EduCoin
+              CRM
             </Typography>
           </div>
 

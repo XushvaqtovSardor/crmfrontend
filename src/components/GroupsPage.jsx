@@ -12,7 +12,7 @@ import {
   Eye,
   RefreshCcw,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
@@ -81,6 +81,7 @@ function calculateEndDate(startDate, durationMonth) {
 
 export default function GroupsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
 
   const [groups, setGroups] = useState([]);
@@ -139,6 +140,18 @@ export default function GroupsPage() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  useEffect(() => {
+    if (searchParams.get('create') !== '1') return;
+
+    setEditId(null);
+    setForm(INITIAL_FORM);
+    setShowModal(true);
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('create');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const save = async () => {
     if (!form.name.trim() || !form.teacherId || !form.courseId || !form.roomId || !form.startDate || !form.weekDays.length) {
