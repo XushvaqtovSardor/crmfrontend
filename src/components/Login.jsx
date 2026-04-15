@@ -19,15 +19,12 @@ export default function Login({ initialMode = 'login' }) {
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
 
-    const [registerRole, setRegisterRole] = useState('STUDENT');
     const [registerContactMethod, setRegisterContactMethod] = useState(CONTACT_EMAIL);
     const [registerFullName, setRegisterFullName] = useState('');
     const [registerEmail, setRegisterEmail] = useState('');
     const [registerPhone, setRegisterPhone] = useState('');
     const [registerPassword, setRegisterPassword] = useState('');
     const [registerBirthDate, setRegisterBirthDate] = useState('');
-    const [registerPosition, setRegisterPosition] = useState('');
-    const [registerExperience, setRegisterExperience] = useState('');
 
     const [registerStep, setRegisterStep] = useState('form');
     const [verificationId, setVerificationId] = useState('');
@@ -125,18 +122,16 @@ export default function Login({ initialMode = 'login' }) {
         }
 
         const payload = {
-            role: registerRole,
             fullName,
             email: undefined,
             phone: undefined,
             password: registerPassword,
-            birthDate: registerBirthDate || undefined,
-            position: registerRole === 'TEACHER' ? registerPosition.trim() || undefined : undefined,
-            experience:
-                registerRole === 'TEACHER' && registerExperience !== ''
-                    ? Number(registerExperience)
-                    : undefined,
+            birthDate: registerBirthDate,
         };
+
+        if (!registerBirthDate) {
+            throw new Error("Tug'ilgan sana majburiy");
+        }
 
         if (registerContactMethod === CONTACT_EMAIL) {
             const email = registerEmail.trim();
@@ -150,17 +145,6 @@ export default function Login({ initialMode = 'login' }) {
                 throw new Error('Telefon raqam kiritilishi shart');
             }
             payload.phone = phone;
-        }
-
-        if (registerRole === 'STUDENT' && !registerBirthDate) {
-            throw new Error('Student uchun tug‘ilgan sana majburiy');
-        }
-
-        if (registerRole === 'TEACHER' && registerExperience !== '') {
-            const expNumber = Number(registerExperience);
-            if (!Number.isFinite(expNumber) || expNumber < 0) {
-                throw new Error('Teacher tajribasi 0 yoki undan katta son bo‘lishi kerak');
-            }
         }
 
         if (!registerPassword || registerPassword.length < 6) {
@@ -186,7 +170,7 @@ export default function Login({ initialMode = 'login' }) {
         setOtpDestination(data.destination || '');
         setOtpExpiresIn(Number(data.expiresIn) || null);
         setRegisterStep('otp');
-        setInfo("Tasdiqlash kodi yuborildi. Kodni kiriting.");
+        setInfo('Tasdiqlash kodi yuborildi. Kodni kiriting.');
     };
 
     const handleRegisterRequest = async (e) => {
@@ -282,39 +266,37 @@ export default function Login({ initialMode = 'login' }) {
             className="h-screen overflow-hidden fancy-enter"
             style={{
                 background:
-                    'radial-gradient(circle at 15% 20%, rgba(36, 122, 88, 0.32), transparent 36%), radial-gradient(circle at 80% 75%, rgba(255, 214, 120, 0.2), transparent 35%), linear-gradient(145deg, #0b1714 0%, #123126 45%, #edf4ef 100%)',
+                    'radial-gradient(circle at 18% 18%, rgba(36, 122, 88, 0.28), transparent 35%), radial-gradient(circle at 82% 78%, rgba(255, 214, 120, 0.2), transparent 35%), linear-gradient(145deg, #0b1714 0%, #123126 48%, #edf4ef 100%)',
             }}
         >
-            <div className="h-full grid lg:grid-cols-[1.05fr_0.95fr]">
-                <aside className="hidden lg:flex px-10 xl:px-16 py-14 text-white relative overflow-hidden">
-                    <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(8,20,15,0.75), rgba(8,20,15,0.35))' }} />
-                    <div className="relative self-end max-w-lg">
-                        <p className="text-emerald-300 text-sm tracking-[0.2em] font-semibold">EDUERP PLATFORM</p>
-                        <h1 className="mt-4 text-5xl font-black leading-tight">One place for classes, homework and progress.</h1>
-                        <p className="mt-5 text-base text-white/80 leading-relaxed">
-                            Tizimga xavfsiz kirish va ro‘yxatdan o‘tish: email yoki telefon orqali OTP tasdiqlash bilan.
-                        </p>
+            <div className="h-full grid lg:grid-cols-[1fr_1fr]">
+                <aside className="hidden lg:flex px-10 py-10 text-white relative overflow-hidden">
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(8,20,15,0.75), rgba(8,20,15,0.3))' }} />
+                    <div className="relative self-end max-w-md">
+                        <p className="text-emerald-300 text-xs tracking-[0.2em] font-semibold">EDUERP</p>
+                        <h1 className="mt-3 text-4xl font-black leading-tight">Xavfsiz kirish va ro‘yxatdan o‘tish</h1>
+                        <p className="mt-3 text-sm text-white/80">Register faqat Student uchun, email yoki telefon orqali OTP bilan.</p>
                     </div>
                 </aside>
 
-                <section className="flex items-center justify-center p-4 sm:p-6 lg:p-8">
+                <section className="flex items-center justify-center p-3 sm:p-4 lg:p-6">
                     <div
-                        className="w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl border bg-white/95 p-6 sm:p-7 shadow-2xl"
+                        className="w-full max-w-md max-h-[calc(100vh-1.5rem)] overflow-y-auto rounded-3xl border bg-white/95 p-5 sm:p-6 shadow-2xl"
                         style={{ borderColor: '#d7e4dc' }}
                     >
-                        <div className="mb-5">
-                            <p className="text-xs font-bold tracking-[0.2em] text-emerald-700">AUTH CENTER</p>
-                            <h2 className="mt-2 text-2xl sm:text-3xl font-black text-gray-900">
+                        <div className="mb-4">
+                            <p className="text-[11px] font-bold tracking-[0.18em] text-emerald-700">AUTH CENTER</p>
+                            <h2 className="mt-1.5 text-2xl font-black text-gray-900">
                                 {isRegisterMode ? "Ro'yxatdan o'tish" : 'Tizimga kirish'}
                             </h2>
-                            <p className="text-sm text-gray-500 mt-2">
+                            <p className="text-xs text-gray-500 mt-1.5">
                                 {isRegisterMode
-                                    ? "Public register faqat STUDENT va TEACHER uchun. OTP tasdiqlash majburiy."
-                                    : 'Email yoki telefon va parol bilan kirish.'}
+                                    ? 'Faqat Student register qilinadi. OTP tasdiqlash majburiy.'
+                                    : 'Email/telefon va parol bilan kiring.'}
                             </p>
                         </div>
 
-                        <div className="mb-4 grid grid-cols-2 rounded-xl p-1 bg-emerald-50 border" style={{ borderColor: '#cfe0d6' }}>
+                        <div className="mb-3 grid grid-cols-2 rounded-xl p-1 bg-emerald-50 border" style={{ borderColor: '#cfe0d6' }}>
                             <button
                                 type="button"
                                 onClick={() => switchMode('login')}
@@ -334,19 +316,19 @@ export default function Login({ initialMode = 'login' }) {
                         </div>
 
                         {error && (
-                            <div className="mb-3 p-3 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600">
+                            <div className="mb-3 p-2.5 rounded-xl border border-red-200 bg-red-50 text-sm text-red-600">
                                 {error}
                             </div>
                         )}
 
                         {info && (
-                            <div className="mb-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-sm text-emerald-700">
+                            <div className="mb-3 p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-sm text-emerald-700">
                                 {info}
                             </div>
                         )}
 
                         {!isRegisterMode && (
-                            <form onSubmit={handleLogin} className="space-y-4">
+                            <form onSubmit={handleLogin} className="space-y-3.5">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email yoki telefon</label>
                                     <input
@@ -396,20 +378,7 @@ export default function Login({ initialMode = 'login' }) {
                         )}
 
                         {isRegisterMode && registerStep === 'form' && (
-                            <form onSubmit={handleRegisterRequest} className="space-y-3.5">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Rol</label>
-                                    <select
-                                        value={registerRole}
-                                        onChange={(e) => setRegisterRole(e.target.value)}
-                                        className="w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2"
-                                        style={{ borderColor: '#c9d9ce' }}
-                                    >
-                                        <option value="STUDENT">STUDENT</option>
-                                        <option value="TEACHER">TEACHER</option>
-                                    </select>
-                                </div>
-
+                            <form onSubmit={handleRegisterRequest} className="space-y-3">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Ism-familiya</label>
                                     <input
@@ -442,6 +411,7 @@ export default function Login({ initialMode = 'login' }) {
                                         >
                                             Email
                                         </button>
+
                                         <button
                                             type="button"
                                             onClick={() => setRegisterContactMethod(CONTACT_PHONE)}
@@ -490,47 +460,16 @@ export default function Login({ initialMode = 'login' }) {
                                 )}
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                        Tug‘ilgan sana {registerRole === 'STUDENT' ? '(majburiy)' : '(ixtiyoriy)'}
-                                    </label>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tug‘ilgan sana</label>
                                     <input
                                         type="date"
                                         value={registerBirthDate}
                                         onChange={(e) => setRegisterBirthDate(e.target.value)}
                                         className="w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2"
                                         style={{ borderColor: '#c9d9ce' }}
-                                        required={registerRole === 'STUDENT'}
+                                        required
                                     />
                                 </div>
-
-                                {registerRole === 'TEACHER' && (
-                                    <>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Position (ixtiyoriy)</label>
-                                            <input
-                                                type="text"
-                                                value={registerPosition}
-                                                onChange={(e) => setRegisterPosition(e.target.value)}
-                                                placeholder="Frontend Mentor"
-                                                className="w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2"
-                                                style={{ borderColor: '#c9d9ce' }}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tajriba (yil)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={registerExperience}
-                                                onChange={(e) => setRegisterExperience(e.target.value)}
-                                                placeholder="0"
-                                                className="w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2"
-                                                style={{ borderColor: '#c9d9ce' }}
-                                            />
-                                        </div>
-                                    </>
-                                )}
 
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Parol</label>
@@ -569,8 +508,8 @@ export default function Login({ initialMode = 'login' }) {
                         )}
 
                         {isRegisterMode && registerStep === 'otp' && (
-                            <form onSubmit={handleVerifyOtp} className="space-y-4">
-                                <div className="p-3 rounded-xl border bg-emerald-50 border-emerald-200 text-sm text-emerald-800">
+                            <form onSubmit={handleVerifyOtp} className="space-y-3.5">
+                                <div className="p-2.5 rounded-xl border bg-emerald-50 border-emerald-200 text-sm text-emerald-800">
                                     <p className="font-semibold">Tasdiqlash kodi yuborildi</p>
                                     <p className="mt-1">
                                         Kanal: {otpChannel || registerContactMethod}
@@ -629,11 +568,11 @@ export default function Login({ initialMode = 'login' }) {
                             </form>
                         )}
 
-                        <div className="mt-5 pt-4 border-t border-gray-200 flex items-center justify-between text-xs">
+                        <div className="mt-4 pt-3 border-t border-gray-200 flex items-center justify-between text-xs">
                             <div className="flex items-center gap-1.5 text-emerald-700 font-semibold">
                                 <ShieldCheck size={14} /> OTP Protected
                             </div>
-                            <div className="text-gray-500">Bir ekranli layout</div>
+                            <div className="text-gray-500">Bitta sahifa</div>
                         </div>
                     </div>
                 </section>
