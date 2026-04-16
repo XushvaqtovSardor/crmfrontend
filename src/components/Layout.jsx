@@ -13,7 +13,7 @@ const SIDEBAR_ITEMS = {
     { name: 'Xonalar', icon: DoorOpen, path: '/rooms' },
     { name: "Sovg'alar", icon: Gift, path: '/gifts' },
     { name: 'Moliya', icon: Wallet, path: '/finance' },
-    { name: 'Boshqarish', icon: Settings, path: '/settings' },
+    { name: 'Boshqarish', icon: Settings, path: '/management' },
   ],
   ADMIN: [
     { name: 'Asosiy', icon: Home, path: '/dashboard' },
@@ -24,7 +24,7 @@ const SIDEBAR_ITEMS = {
     { name: 'Xonalar', icon: DoorOpen, path: '/rooms' },
     { name: "Sovg'alar", icon: Gift, path: '/gifts' },
     { name: 'Moliya', icon: Wallet, path: '/finance' },
-    { name: 'Boshqarish', icon: Settings, path: '/settings' },
+    { name: 'Boshqarish', icon: Settings, path: '/management' },
   ],
   MANAGEMENT: [
     { name: 'Asosiy', icon: Home, path: '/dashboard' },
@@ -35,7 +35,7 @@ const SIDEBAR_ITEMS = {
     { name: 'Xonalar', icon: DoorOpen, path: '/rooms' },
     { name: "Sovg'alar", icon: Gift, path: '/gifts' },
     { name: 'Moliya', icon: Wallet, path: '/finance' },
-    { name: 'Boshqarish', icon: Settings, path: '/settings' },
+    { name: 'Boshqarish', icon: Settings, path: '/management' },
   ],
   ADMINSTRATOR: [
     { name: 'Asosiy', icon: Home, path: '/dashboard' },
@@ -46,7 +46,7 @@ const SIDEBAR_ITEMS = {
     { name: 'Xonalar', icon: DoorOpen, path: '/rooms' },
     { name: "Sovg'alar", icon: Gift, path: '/gifts' },
     { name: 'Moliya', icon: Wallet, path: '/finance' },
-    { name: 'Boshqarish', icon: Settings, path: '/settings' },
+    { name: 'Boshqarish', icon: Settings, path: '/management' },
   ],
   TEACHER: [
     { name: 'Asosiy', icon: Home, path: '/dashboard' },

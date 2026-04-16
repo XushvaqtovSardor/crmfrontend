@@ -22,6 +22,7 @@ const FinancePage = lazy(() => import('./components/FinancePage.jsx'));
 const HomeworksPage = lazy(() => import('./components/HomeworksPage.jsx'));
 const ProgressPage = lazy(() => import('./components/ProgressPage.jsx'));
 const SettingsPage = lazy(() => import('./components/SettingsPage.jsx'));
+const ManagementPage = lazy(() => import('./components/ManagementPage.jsx'));
 const MyGroupsPage = lazy(() => import('./components/MyGroupsPage.jsx'));
 const LessonsPage = lazy(() => import('./components/LessonsPage.jsx'));
 const TeacherFinancePage = lazy(() => import('./components/TeacherFinancePage.jsx'));
@@ -171,6 +172,17 @@ function App() {
             <Route path="/settings" element={
               <AuthenticatedLayout>
                 <SettingsPage />
+              </AuthenticatedLayout>
+            } />
+
+            <Route path="/management" element={
+              <AuthenticatedLayout allowedRoles={STAFF_ALLOWED_ROLES}>
+                <Navigate to="/management/courses" replace />
+              </AuthenticatedLayout>
+            } />
+            <Route path="/management/:tab" element={
+              <AuthenticatedLayout allowedRoles={STAFF_ALLOWED_ROLES}>
+                <ManagementPage />
               </AuthenticatedLayout>
             } />
 

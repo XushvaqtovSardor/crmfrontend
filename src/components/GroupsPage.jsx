@@ -328,8 +328,11 @@ export default function GroupsPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Guruhlar</h1>
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between mb-5 gap-4">
+        <div>
+          <h1 className="text-4xl leading-none font-semibold text-gray-900">Guruhlar</h1>
+          <p className="mt-2 text-sm text-gray-500">Aktiv guruhlarni boshqaring va arxivni nazorat qiling</p>
+        </div>
         <button
           type="button"
           onClick={() => {
@@ -359,30 +362,30 @@ export default function GroupsPage() {
             Arxiv
           </button>
         </div>
-
-        <button
-          type="button"
-          onClick={loadAll}
-          className="w-10 h-10 rounded-xl border border-[#dfe4ef] bg-white text-gray-500 flex items-center justify-center"
-          title="Yangilash"
-        >
-          <RefreshCcw size={16} />
-        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-2xl border border-[#e3e7f1] p-5">
-          <Users className="text-gray-500 mb-3" size={24} />
+          <div className="mb-3 flex items-center justify-between">
+            <Users className="text-gray-500" size={24} />
+            <MoreHorizontal size={16} className="text-gray-400" />
+          </div>
           <p className="text-gray-500 text-sm">Jami guruhlar</p>
           <p className="text-5xl font-bold text-gray-900 mt-2">{groups.length}</p>
         </div>
         <div className="bg-white rounded-2xl border border-[#e3e7f1] p-5">
-          <UserPlus className="text-gray-500 mb-3" size={24} />
+          <div className="mb-3 flex items-center justify-between">
+            <UserPlus className="text-gray-500" size={24} />
+            <MoreHorizontal size={16} className="text-gray-400" />
+          </div>
           <p className="text-gray-500 text-sm">O'qituvchilar</p>
           <p className="text-5xl font-bold text-gray-900 mt-2">{teachers.length}</p>
         </div>
         <div className="bg-white rounded-2xl border border-[#e3e7f1] p-5">
-          <GraduationCap className="text-gray-500 mb-3" size={24} />
+          <div className="mb-3 flex items-center justify-between">
+            <GraduationCap className="text-gray-500" size={24} />
+            <MoreHorizontal size={16} className="text-gray-400" />
+          </div>
           <p className="text-gray-500 text-sm">O'quvchilar</p>
           <p className="text-5xl font-bold text-gray-900 mt-2">{studentsCount}</p>
         </div>
@@ -408,7 +411,16 @@ export default function GroupsPage() {
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500">Xona</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500">O'qituvchi</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500">Talabalar</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500"> </th>
+                <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500">
+                  <button
+                    type="button"
+                    onClick={loadAll}
+                    className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#dfe4ef] bg-white text-gray-500 hover:text-gray-700"
+                    title="Yangilash"
+                  >
+                    <RefreshCcw size={14} />
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>

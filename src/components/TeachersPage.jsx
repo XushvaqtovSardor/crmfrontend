@@ -289,53 +289,44 @@ export default function TeachersPage() {
                 </div>
             </div>
 
-            <div className="rounded-2xl border border-[#e2e8f4] bg-white p-3">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setTab('ACTIVE')}
-                            className={cn(
-                                'h-9 px-4 rounded-xl text-sm font-semibold',
-                                tab === 'ACTIVE' ? 'bg-white border border-[#dfe4ef] text-gray-900' : 'text-gray-500 hover:bg-gray-100',
-                            )}
-                        >
-                            Faol o'qituvchilar
-                        </button>
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setTab('ACTIVE')}
+                        className={cn(
+                            'h-9 px-4 rounded-xl text-sm font-semibold border transition',
+                            tab === 'ACTIVE'
+                                ? 'bg-white border-[#dfe4ef] text-gray-900 shadow-sm'
+                                : 'border-transparent text-gray-500 hover:bg-white hover:border-[#edf1f8]',
+                        )}
+                    >
+                        Faol o'qituvchilar
+                    </button>
 
-                        <button
-                            type="button"
-                            onClick={() => setTab('ARCHIVE')}
-                            className={cn(
-                                'h-9 px-4 rounded-xl text-sm font-semibold',
-                                tab === 'ARCHIVE' ? 'bg-white border border-[#dfe4ef] text-gray-900' : 'text-gray-500 hover:bg-gray-100',
-                            )}
-                        >
-                            Arxiv
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setTab('ARCHIVE')}
+                        className={cn(
+                            'h-9 px-4 rounded-xl text-sm font-semibold border transition',
+                            tab === 'ARCHIVE'
+                                ? 'bg-white border-[#dfe4ef] text-gray-900 shadow-sm'
+                                : 'border-transparent text-gray-500 hover:bg-white hover:border-[#edf1f8]',
+                        )}
+                    >
+                        Arxiv
+                    </button>
+                </div>
 
-                    <div className="flex items-center gap-2">
-                        <div className="relative w-full lg:w-72">
-                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(event) => setSearch(event.target.value)}
-                                placeholder="Qidirish..."
-                                className="w-full h-10 border border-[#dfe4ef] rounded-xl pl-9 pr-3 text-sm"
-                            />
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={load}
-                            title="Yangilash"
-                            className="w-9 h-9 rounded-xl border border-[#dfe4ef] bg-white text-gray-500 inline-flex items-center justify-center"
-                        >
-                            <RefreshCcw size={15} />
-                        </button>
-                    </div>
+                <div className="relative w-full lg:w-72">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="Qidirish..."
+                        className="w-full h-10 border border-[#dfe4ef] rounded-xl pl-9 pr-3 text-sm bg-white"
+                    />
                 </div>
             </div>
 
@@ -347,7 +338,7 @@ export default function TeachersPage() {
 
             <section className="rounded-2xl border border-[#e2e8f4] bg-white overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[1200px]">
+                    <table className="w-full min-w-300">
                         <thead>
                             <tr className="border-b border-[#e9edf5] bg-[#fafbff]">
                                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500">#</th>
@@ -358,7 +349,16 @@ export default function TeachersPage() {
                                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500">Yaratilgan sana</th>
                                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500">Kim qo'shgan</th>
                                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500">Coin</th>
-                                <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500"></th>
+                                <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500">
+                                    <button
+                                        type="button"
+                                        onClick={load}
+                                        title="Yangilash"
+                                        className="inline-flex items-center justify-center text-gray-500 hover:text-gray-700"
+                                    >
+                                        <RefreshCcw size={16} />
+                                    </button>
+                                </th>
                             </tr>
                         </thead>
 
@@ -493,7 +493,7 @@ export default function TeachersPage() {
                 <div className="fixed inset-0 z-50 flex justify-end">
                     <div className="absolute inset-0 bg-black/25" onClick={closeDrawer} />
 
-                    <aside className="relative h-full w-full max-w-[420px] border-l border-slate-200 bg-white shadow-2xl flex flex-col">
+                    <aside className="relative h-full w-full max-w-105 border-l border-slate-200 bg-white shadow-2xl flex flex-col">
                         <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-5 flex items-start justify-between gap-3">
                             <div>
                                 <h2 className="text-[34px] leading-none font-semibold text-slate-900">
