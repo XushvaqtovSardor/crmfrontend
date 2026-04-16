@@ -107,14 +107,9 @@ export default function LessonsPage() {
     try {
       const res = await api.get('/groups/my');
       const list = normalizeList(res.data);
-      const queryGroupId = searchParams.get('groupId');
       setGroups(list);
 
       setSelectedGroupId((prev) => {
-        if (queryGroupId && list.some((group) => String(group.id) === String(queryGroupId))) {
-          return String(queryGroupId);
-        }
-
         if (prev && list.some((group) => String(group.id) === String(prev))) {
           return String(prev);
         }
@@ -127,7 +122,7 @@ export default function LessonsPage() {
     } finally {
       setLoadingGroups(false);
     }
-  }, [searchParams]);
+  }, []);
 
   const loadSelectedGroupDetail = useCallback(async (groupIdValue) => {
     if (!groupIdValue) {

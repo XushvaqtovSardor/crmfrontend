@@ -191,7 +191,7 @@ export default function TeacherDashboard() {
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
                 <Panel title="Mening guruhlarim" icon={Users}>
-                    <div className="space-y-3 max-h-[460px] overflow-auto pr-1">
+                    <div className="space-y-3 max-h-115 overflow-auto pr-1">
                         {groups.length > 0 ? groups.map((group) => (
                             <div key={group.id} className="rounded-xl border border-[#ecf0f8] bg-[#fafbff] p-4">
                                 <div className="flex items-start justify-between gap-3">
