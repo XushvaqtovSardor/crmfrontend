@@ -27,6 +27,12 @@ const MyGroupsPage = lazy(() => import('./components/MyGroupsPage.jsx'));
 const LessonsPage = lazy(() => import('./components/LessonsPage.jsx'));
 const TeacherFinancePage = lazy(() => import('./components/TeacherFinancePage.jsx'));
 const StudentVideosPage = lazy(() => import('./components/StudentVideosPage.jsx'));
+const StudentPaymentsPage = lazy(() => import('./components/StudentPaymentsPage.jsx'));
+const StudentNotificationsPage = lazy(() => import('./components/StudentNotificationsPage.jsx'));
+const StudentRatingPage = lazy(() => import('./components/StudentRatingPage.jsx'));
+const StudentShopPage = lazy(() => import('./components/StudentShopPage.jsx'));
+const StudentGroupDetailsPage = lazy(() => import('./components/StudentGroupDetailsPage.jsx'));
+const StudentLessonDetailsPage = lazy(() => import('./components/StudentLessonDetailsPage.jsx'));
 import { getDefaultRouteByRole, normalizeRole, STAFF_ROLES } from './utils/roles.js';
 
 const STAFF_ALLOWED_ROLES = [...STAFF_ROLES];
@@ -147,6 +153,18 @@ function App() {
               </AuthenticatedLayout>
             } />
 
+            <Route path="/my-groups/:groupId" element={
+              <AuthenticatedLayout allowedRoles={['STUDENT']}>
+                <StudentGroupDetailsPage />
+              </AuthenticatedLayout>
+            } />
+
+            <Route path="/my-groups/:groupId/lessons/:lessonId" element={
+              <AuthenticatedLayout allowedRoles={['STUDENT']}>
+                <StudentLessonDetailsPage />
+              </AuthenticatedLayout>
+            } />
+
             <Route path="/my-finance" element={
               <AuthenticatedLayout allowedRoles={['TEACHER']}>
                 <TeacherFinancePage />
@@ -156,6 +174,30 @@ function App() {
             <Route path="/videos" element={
               <AuthenticatedLayout allowedRoles={['STUDENT']}>
                 <StudentVideosPage />
+              </AuthenticatedLayout>
+            } />
+
+            <Route path="/payments" element={
+              <AuthenticatedLayout allowedRoles={['STUDENT']}>
+                <StudentPaymentsPage />
+              </AuthenticatedLayout>
+            } />
+
+            <Route path="/notifications" element={
+              <AuthenticatedLayout allowedRoles={['STUDENT']}>
+                <StudentNotificationsPage />
+              </AuthenticatedLayout>
+            } />
+
+            <Route path="/rating" element={
+              <AuthenticatedLayout allowedRoles={['STUDENT']}>
+                <StudentRatingPage />
+              </AuthenticatedLayout>
+            } />
+
+            <Route path="/shop" element={
+              <AuthenticatedLayout allowedRoles={['STUDENT']}>
+                <StudentShopPage />
               </AuthenticatedLayout>
             } />
 

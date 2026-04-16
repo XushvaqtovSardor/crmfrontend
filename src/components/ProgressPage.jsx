@@ -1,112 +1,180 @@
-import { useState, useEffect } from 'react';
-import { TrendingUp, Award, Target, BarChart3, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Loader2, RefreshCcw, Target, TrendingUp } from 'lucide-react';
 import api from '../api.js';
+import { getApiErrorMessage } from '../utils/http.js';
+import { computeStudentCoins, computeStudentXP } from '../utils/studentPanel.js';
+
+function gradeLabel(score) {
+    if (score >= 90) return "A'lo";
+    if (score >= 70) return 'Yaxshi';
+    if (score >= 50) return 'Qoniqarli';
+    return 'Qoniqarsiz';
+}
+
+function scoreClass(score) {
+    if (score >= 90) return 'text-emerald-600 bg-emerald-50';
+    if (score >= 70) return 'text-blue-600 bg-blue-50';
+    if (score >= 50) return 'text-amber-600 bg-amber-50';
+    return 'text-red-600 bg-red-50';
+}
 
 export default function ProgressPage() {
-  const [progress, setProgress] = useState(null);
-  const [loading, setLoading] = useState(true);
+    const [progress, setProgress] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-  useEffect(() => { load(); }, []);
+    const loadData = async () => {
+        setLoading(true);
+        setError('');
 
-  const load = async () => {
-    try {
-      const res = await api.get('/erp/student/progress');
-      setProgress(res.data?.data);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+        try {
+            const response = await api.get('/erp/student/progress');
+            setProgress(response.data?.data ?? null);
+        } catch (e) {
+            setError(getApiErrorMessage(e, "Natijalarni yuklab bo'lmadi"));
+            setProgress(null);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  if (loading) return <div className="flex justify-center py-12"><Loader2 size={32} className="animate-spin text-violet-500" /></div>;
+    useEffect(() => {
+        loadData();
+    }, []);
 
-  const avgScore = progress?.averageScore || 0;
-  const submissions = progress?.submissions || [];
-  const grades = progress?.grades || [];
+    const averageScore = Number(progress?.averageScore) || 0;
+    const xp = useMemo(() => computeStudentXP(progress), [progress]);
+    const coins = useMemo(() => computeStudentCoins(progress), [progress]);
 
-  const getGradeInfo = (score) => {
-    if (score >= 90) return { label: "A'lo", color: 'text-emerald-600 bg-emerald-50', bar: 'bg-emerald-500' };
-    if (score >= 70) return { label: 'Yaxshi', color: 'text-blue-600 bg-blue-50', bar: 'bg-blue-500' };
-    if (score >= 50) return { label: "Qoniqarli", color: 'text-amber-600 bg-amber-50', bar: 'bg-amber-500' };
-    return { label: "Qoniqarsiz", color: 'text-red-600 bg-red-50', bar: 'bg-red-500' };
-  };
+    const submissionCount = Number(progress?.submissionCount) || 0;
+    const onTime = Number(progress?.onTime) || 0;
+    const late = Number(progress?.late) || 0;
+    const approved = Number(progress?.grading?.approved) || 0;
+    const pending = Number(progress?.grading?.pending) || 0;
+    const rejected = Number(progress?.grading?.rejected) || 0;
 
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Mening natijalarim</h1>
+    const monitoringRows = [
+        {
+            id: 'class',
+            title: 'Dars faolligi',
+            subtitle: "Darsga qatnashuv va vazifalarni vaqtida topshirish",
+            xp: onTime * 12,
+            coins: onTime * 18,
+            value: `${onTime} ta vaqtida topshirilgan`,
+        },
+        {
+            id: 'homework',
+            title: 'Uyga vazifa',
+            subtitle: 'Topshiriqlar soni va kechikishlar',
+            xp: submissionCount * 10 + late * 2,
+            coins: submissionCount * 14,
+            value: `${submissionCount} ta topshiriq`,
+        },
+        {
+            id: 'exam',
+            title: 'Tekshiruv natijalari',
+            subtitle: "O'qituvchi tomonidan tekshirilgan ishlari",
+            xp: approved * 14,
+            coins: approved * 20,
+            value: `${approved} ta tasdiqlangan`,
+        },
+        {
+            id: 'moderation',
+            title: 'Moderatsiya',
+            subtitle: 'Rad etilgan va kutilayotgan ishlarga koeffitsiyent',
+            xp: Math.max(pending * 4 - rejected * 9, 0),
+            coins: Math.max(pending * 7 - rejected * 10, 0),
+            value: `${pending} kutilmoqda / ${rejected} rad etilgan`,
+        },
+    ];
 
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-violet-500 to-indigo-600 rounded-2xl p-6 text-white">
-          <Target size={24} className="mb-2" />
-          <p className="text-sm text-violet-200">O'rtacha ball</p>
-          <h3 className="text-4xl font-bold mt-1">{Math.round(avgScore)}%</h3>
-          <span className={`mt-2 inline-block px-3 py-1 rounded-full text-xs font-bold ${getGradeInfo(avgScore).color}`}>
-            {getGradeInfo(avgScore).label}
-          </span>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <Award size={24} className="text-emerald-500 mb-2" />
-          <p className="text-sm text-gray-500">Jami topshiriqlar</p>
-          <h3 className="text-4xl font-bold text-gray-900 mt-1">{submissions.length}</h3>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <TrendingUp size={24} className="text-blue-500 mb-2" />
-          <p className="text-sm text-gray-500">Baholar</p>
-          <h3 className="text-4xl font-bold text-gray-900 mt-1">{grades.length}</h3>
-        </div>
-      </div>
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+                <h1 className="text-[34px] leading-none font-semibold text-gray-900">Mening natijalarim</h1>
+                <button
+                    type="button"
+                    onClick={loadData}
+                    className="h-10 rounded-xl border border-[#d6dbe4] bg-white px-4 text-sm font-semibold text-gray-700 inline-flex items-center gap-2"
+                >
+                    <RefreshCcw size={15} /> Yangilash
+                </button>
+            </div>
 
-      
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Topshiriqlar tarixi</h3>
-        <div className="space-y-3">
-          {submissions.length > 0 ? submissions.map((s, i) => {
-            const gi = getGradeInfo(s.score || 0);
-            return (
-              <div key={i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${gi.color}`}>
-                  <span className="text-lg font-bold">{s.score || '—'}</span>
+            {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                    {error}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">{s.title}</p>
-                  <p className="text-xs text-gray-400">
-                    {s.status === 'COMPLETED' ? '✅ Bajarildi' : s.status === 'MISSED' ? '❌ O\'tkazib yuborildi' : '⏳ Kechiktirildi'}
-                    {s.feedback && ` • ${s.feedback}`}
-                  </p>
-                </div>
-                <span className="text-xs text-gray-400">{new Date(s.created_at).toLocaleDateString('uz-UZ')}</span>
-              </div>
-            );
-          }) : (
-            <p className="text-center text-gray-400 py-8 text-sm">Topshiriqlar topilmadi</p>
-          )}
-        </div>
-      </div>
+            )}
 
-      
-      {grades.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Baholar</h3>
-          <div className="space-y-3">
-            {grades.map((g, i) => {
-              const gi = getGradeInfo(g.score);
-              return (
-                <div key={i} className="flex items-center gap-4">
-                  <span className="text-sm text-gray-500 w-8">{i + 1}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">{g.title}</p>
-                    <div className="w-full bg-gray-100 rounded-full h-2 mt-1">
-                      <div className={`${gi.bar} rounded-full h-2`} style={{ width: `${g.score}%` }} />
-                    </div>
-                  </div>
-                  <span className={`text-sm font-bold px-3 py-1 rounded-xl ${gi.color}`}>
-                    {g.score}
-                  </span>
+            {loading ? (
+                <div className="rounded-2xl border border-[#dce1ea] bg-white py-24">
+                    <Loader2 size={26} className="mx-auto animate-spin text-[#c07a37]" />
                 </div>
-              );
-            })}
-          </div>
+            ) : (
+                <>
+                    <section className="rounded-2xl border border-[#dce1ea] bg-white p-5">
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                            <div>
+                                <p className="text-sm text-gray-500">Umumiy ko'rsatkich</p>
+                                <p className="text-4xl font-semibold text-gray-900 mt-1">{Math.round(averageScore)}%</p>
+                                <span className={`mt-2 inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold ${scoreClass(averageScore)}`}>
+                                    {gradeLabel(averageScore)}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <MetricCard icon={<TrendingUp size={16} />} label="XP" value={xp} />
+                                <MetricCard icon={<Target size={16} />} label="Kumush" value={coins} />
+                            </div>
+                        </div>
+
+                        <div className="mt-4 h-3 rounded-full bg-[#eceff6] overflow-hidden">
+                            <div className="h-full rounded-full bg-[#d48741]" style={{ width: `${Math.max(0, Math.min(100, Math.round(averageScore)))}%` }} />
+                        </div>
+                    </section>
+
+                    <section className="rounded-2xl border border-[#dce1ea] bg-white overflow-hidden">
+                        <div className="px-4 py-3 border-b border-[#e8edf5] bg-[#f8f9fd]">
+                            <h3 className="text-base font-semibold text-gray-800">Monitoring</h3>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-190">
+                                <thead>
+                                    <tr className="border-b border-[#e8edf5] bg-white">
+                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Kategoriya</th>
+                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Tavsif</th>
+                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Holat</th>
+                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">XP</th>
+                                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Kumush</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {monitoringRows.map((row) => (
+                                        <tr key={row.id} className="border-b border-[#eef2f8] last:border-b-0">
+                                            <td className="py-3 px-4 text-sm font-medium text-gray-900">{row.title}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-600">{row.subtitle}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-700">{row.value}</td>
+                                            <td className="py-3 px-4 text-sm font-semibold text-[#b66f2f]">+{row.xp}</td>
+                                            <td className="py-3 px-4 text-sm font-semibold text-[#b66f2f]">+{row.coins}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
+}
+
+function MetricCard({ icon, label, value }) {
+    return (
+        <div className="rounded-xl border border-[#e2e7f1] bg-[#f9fbff] px-3 py-2 min-w-28">
+            <p className="text-xs text-gray-500 inline-flex items-center gap-1">{icon} {label}</p>
+            <p className="text-lg font-semibold text-gray-900 mt-1">{value}</p>
+        </div>
+    );
 }

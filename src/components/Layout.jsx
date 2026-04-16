@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Home, Users, GraduationCap, Layers3, BookOpen, DoorOpen, Wallet, Gift, Settings, Bell, Moon, Sun, Search, LogOut, Menu, X, ChevronDown, CalendarDays, Plus, ChevronLeft, ChevronRight, PlayCircle, } from 'lucide-react';
+import { Home, Users, GraduationCap, Layers3, BookOpen, DoorOpen, Wallet, Gift, Settings, Bell, Moon, Sun, Search, LogOut, Menu, X, ChevronDown, CalendarDays, Plus, ChevronLeft, ChevronRight, PlayCircle, CreditCard, BarChart3, Trophy, ShoppingBag, } from 'lucide-react';
 import { useAuth } from '../AuthContext.jsx';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { normalizeRole } from '../utils/roles.js';
@@ -84,6 +84,17 @@ const CENTER_OPTIONS = [
 ];
 
 const CENTER_STORAGE_KEY = 'erp_selected_center';
+
+const STUDENT_MENU_ITEMS = [
+  { name: 'Bosh sahifa', icon: Home, path: '/dashboard' },
+  { name: "To'lovlarim", icon: CreditCard, path: '/payments' },
+  { name: 'Guruhlarim', icon: Layers3, path: '/my-groups' },
+  { name: "Ko'rsatgichlarim", icon: BarChart3, path: '/progress' },
+  { name: 'Reyting', icon: Trophy, path: '/rating' },
+  { name: "Do'kon", icon: ShoppingBag, path: '/shop' },
+  { name: "Qo'shimcha darslar", icon: PlayCircle, path: '/videos' },
+  { name: 'Sozlamalar', icon: Settings, path: '/settings' },
+];
 
 function isRouteActive(pathname, itemPath) {
   if (itemPath === '/dashboard')
@@ -219,6 +230,22 @@ export default function Layout({ children }) {
     setQuickActionsOpen(false);
     navigate(path);
   };
+
+  if (normalizedRole === 'STUDENT') {
+    return (
+      <StudentLayout
+        user={user}
+        pathname={location.pathname}
+        navigate={navigate}
+        onLogout={() => {
+          logout();
+          navigate('/login');
+        }}
+      >
+        {children}
+      </StudentLayout>
+    );
+  }
 
   return (<div className="modern-shell min-h-screen flex fancy-enter">
 
@@ -449,4 +476,155 @@ export default function Layout({ children }) {
     </div>
 
   </div>);
+}
+
+function isStudentRouteActive(pathname, itemPath) {
+  if (itemPath === '/dashboard') {
+    return pathname === '/dashboard';
+  }
+  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+}
+
+function StudentLayout({ children, user, pathname, navigate, onLogout }) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+    return window.matchMedia('(min-width: 1024px)').matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+    const syncDesktopState = (matches) => {
+      setIsDesktop(matches);
+      if (matches) {
+        setMobileOpen(false);
+      }
+    };
+
+    syncDesktopState(mediaQuery.matches);
+
+    const handleChange = (event) => {
+      syncDesktopState(event.matches);
+    };
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  return (
+    <div className="min-h-screen bg-[#e9edf4] flex">
+      {mobileOpen && !isDesktop && (
+        <div className="fixed inset-0 z-40 bg-black/35 lg:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+
+      <aside
+        className={`fixed lg:sticky top-0 left-0 z-50 h-screen border-r border-[#d4dae5] bg-white flex flex-col transition-all duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} ${sidebarOpen ? 'w-72' : 'w-24'}`}
+      >
+        <div className="h-16 border-b border-[#dde3ee] px-4 flex items-center justify-between">
+          <div className="inline-flex items-center gap-3 overflow-hidden">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#f3b674] to-[#d98a42] text-white flex items-center justify-center font-bold text-lg shrink-0">C</div>
+            {sidebarOpen && <span className="text-2xl font-semibold text-[#b86e2e]">CRM</span>}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setSidebarOpen((prev) => !prev)}
+            className="hidden lg:inline-flex h-8 w-8 rounded-lg border border-[#d4dae5] bg-white text-gray-600 items-center justify-center"
+          >
+            {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          </button>
+
+          <button type="button" onClick={() => setMobileOpen(false)} className="lg:hidden text-gray-500">
+            <X size={18} />
+          </button>
+        </div>
+
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {STUDENT_MENU_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = isStudentRouteActive(pathname, item.path);
+
+            return (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => {
+                  navigate(item.path);
+                  setMobileOpen(false);
+                }}
+                className={`w-full h-11 rounded-xl px-3 inline-flex items-center gap-3 text-sm font-medium transition ${active ? 'bg-[#fdeedc] text-[#b36a2a] border border-[#f0d0aa]' : 'text-gray-600 border border-transparent hover:bg-[#f7f8fc]'} ${!sidebarOpen ? 'justify-center px-0' : ''}`}
+                title={item.name}
+              >
+                <Icon size={18} className="shrink-0" />
+                {sidebarOpen && <span>{item.name}</span>}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="p-3 border-t border-[#dde3ee]">
+          <button
+            type="button"
+            onClick={onLogout}
+            className={`w-full h-11 rounded-xl border border-[#f0c4c4] bg-[#fff5f5] text-red-600 inline-flex items-center gap-2 px-3 ${!sidebarOpen ? 'justify-center px-0' : ''}`}
+          >
+            <LogOut size={17} />
+            {sidebarOpen && <span className="text-sm font-semibold">Chiqish</span>}
+          </button>
+        </div>
+      </aside>
+
+      <div className="flex-1 min-w-0 flex flex-col">
+        <header className="h-16 border-b border-[#d7deea] bg-[#f2f5fb] px-4 lg:px-6 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden h-9 w-9 rounded-lg border border-[#d3d9e4] bg-white inline-flex items-center justify-center text-gray-600"
+            >
+              <Menu size={18} />
+            </button>
+            <p className="text-sm text-gray-500">Student panel</p>
+          </div>
+
+          <div className="inline-flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/notifications')}
+              className={`h-10 w-10 rounded-xl border inline-flex items-center justify-center ${pathname === '/notifications' ? 'border-[#e7c39d] bg-[#fff0df] text-[#b86f2f]' : 'border-[#d4dae5] bg-white text-gray-600'}`}
+            >
+              <Bell size={17} />
+            </button>
+
+            <div className="h-10 rounded-xl border border-[#d4dae5] bg-white px-3 inline-flex items-center gap-2">
+              <span className="inline-flex h-7 w-7 rounded-full bg-gradient-to-br from-[#e9a969] to-[#ce7837] text-white items-center justify-center text-sm font-semibold">
+                {user?.fullName?.charAt(0) || 'U'}
+              </span>
+              <span className="hidden sm:inline text-sm font-medium text-gray-700 max-w-32 truncate">{user?.fullName || 'Student'}</span>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 p-4 lg:p-6 overflow-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
 }
