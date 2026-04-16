@@ -21,7 +21,7 @@ export default function StudentSettingsPanel() {
 
             <section className="rounded-2xl border border-[#dce1ea] bg-white p-4">
                 <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4 items-center">
-                    <div className="h-32 w-32 rounded-2xl bg-gradient-to-br from-[#f3b77a] to-[#e89347] text-white flex items-center justify-center text-3xl font-semibold">
+                    <div className="h-32 w-32 rounded-2xl bg-linear-to-br from-[#f3b77a] to-[#e89347] text-white flex items-center justify-center text-3xl font-semibold">
                         {String(user?.fullName || 'U').trim().charAt(0).toUpperCase() || 'U'}
                     </div>
 

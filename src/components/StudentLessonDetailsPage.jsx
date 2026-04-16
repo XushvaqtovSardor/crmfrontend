@@ -136,7 +136,7 @@ export default function StudentLessonDetailsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {(Array.isArray(lesson.lessonVideos) ? lesson.lessonVideos : []).map((video, index) => (
                                 <article key={video.id} className="rounded-2xl border border-[#dce1ea] bg-white overflow-hidden">
-                                    <div className="h-44 bg-gradient-to-br from-[#dbe4ff] via-[#eff3ff] to-[#f7f9ff] flex items-center justify-center">
+                                    <div className="h-44 bg-linear-to-br from-[#dbe4ff] via-[#eff3ff] to-[#f7f9ff] flex items-center justify-center">
                                         <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-[#6d7ba7]">
                                             <Play size={20} />
                                         </span>

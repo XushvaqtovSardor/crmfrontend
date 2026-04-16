@@ -320,7 +320,7 @@ export default function StudentDashboard() {
                     <h3 className="text-base font-semibold text-gray-800">Tanlangan kundagi darslar</h3>
                     <p className="text-xs text-gray-500 mt-1">{selectedDate}</p>
 
-                    <div className="mt-3 space-y-2 max-h-[420px] overflow-auto pr-1">
+                    <div className="mt-3 space-y-2 max-h-105 overflow-auto pr-1">
                         {selectedEvents.length > 0 ? selectedEvents.map((event) => (
                             <article
                                 key={event.id}

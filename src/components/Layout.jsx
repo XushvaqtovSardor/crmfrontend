@@ -538,7 +538,7 @@ function StudentLayout({ children, user, pathname, navigate, onLogout }) {
       >
         <div className="h-16 border-b border-[#dde3ee] px-4 flex items-center justify-between">
           <div className="inline-flex items-center gap-3 overflow-hidden">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#f3b674] to-[#d98a42] text-white flex items-center justify-center font-bold text-lg shrink-0">C</div>
+            <div className="h-10 w-10 rounded-xl bg-linear-to-br from-[#f3b674] to-[#d98a42] text-white flex items-center justify-center font-bold text-lg shrink-0">C</div>
             {sidebarOpen && <span className="text-2xl font-semibold text-[#b86e2e]">CRM</span>}
           </div>
 
@@ -613,7 +613,7 @@ function StudentLayout({ children, user, pathname, navigate, onLogout }) {
             </button>
 
             <div className="h-10 rounded-xl border border-[#d4dae5] bg-white px-3 inline-flex items-center gap-2">
-              <span className="inline-flex h-7 w-7 rounded-full bg-gradient-to-br from-[#e9a969] to-[#ce7837] text-white items-center justify-center text-sm font-semibold">
+              <span className="inline-flex h-7 w-7 rounded-full bg-linear-to-br from-[#e9a969] to-[#ce7837] text-white items-center justify-center text-sm font-semibold">
                 {user?.fullName?.charAt(0) || 'U'}
               </span>
               <span className="hidden sm:inline text-sm font-medium text-gray-700 max-w-32 truncate">{user?.fullName || 'Student'}</span>
