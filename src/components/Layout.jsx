@@ -74,6 +74,17 @@ const STAFF_QUICK_ACTIONS = [
   { label: 'Talaba qo\'shish', path: '/students?create=1', icon: GraduationCap },
 ];
 
+const CENTER_OPTIONS = [
+  'AICoder markazi',
+  'Fizika va Matematika',
+  '4-maktab',
+  'Niner markazi',
+  'SAT,IELTS,AP,CONSULTING centre',
+  'IELTS full mock',
+];
+
+const CENTER_STORAGE_KEY = 'erp_selected_center';
+
 function isRouteActive(pathname, itemPath) {
   if (itemPath === '/dashboard')
     return pathname === '/dashboard';
@@ -93,6 +104,14 @@ export default function Layout({ children }) {
   });
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const quickActionsRef = useRef(null);
+  const [selectedCenter, setSelectedCenter] = useState(() => {
+    if (typeof window === 'undefined') {
+      return CENTER_OPTIONS[0];
+    }
+
+    const saved = window.localStorage.getItem(CENTER_STORAGE_KEY);
+    return saved && CENTER_OPTIONS.includes(saved) ? saved : CENTER_OPTIONS[0];
+  });
   const [dark, setDark] = useState(() => {
     const saved = localStorage.getItem('erp_theme');
     return saved === 'night';
@@ -109,6 +128,14 @@ export default function Layout({ children }) {
       document.body.classList.remove('theme-night');
     };
   }, [dark]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(CENTER_STORAGE_KEY, selectedCenter);
+  }, [selectedCenter]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -231,7 +258,7 @@ export default function Layout({ children }) {
 
           </div>
 
-          {sidebarOpen && <span className="text-[33px] font-extrabold italic tracking-tight" style={{ color: '#7e56d8' }}>CRM</span>}
+          {sidebarOpen && <span className="text-[33px] font-extrabold italic tracking-tight" style={{ color: '#7e56d8' }}>EduCoin</span>}
 
         </div>
 
@@ -370,13 +397,16 @@ export default function Layout({ children }) {
 
         <div className="flex items-center gap-2">
 
-          <div className="hidden lg:flex h-10 px-4 rounded-xl border items-center gap-2 text-sm text-gray-600 font-medium" style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}>
-
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-
-            {user?.role ? user.role.charAt(0) + user.role.slice(1).toLowerCase() : 'User'}
-
-          </div>
+          <select
+            value={selectedCenter}
+            onChange={(event) => setSelectedCenter(event.target.value)}
+            className="hidden lg:flex h-10 min-w-48 rounded-xl border px-4 text-sm text-gray-600 bg-white"
+            style={{ borderColor: 'var(--border)' }}
+          >
+            {CENTER_OPTIONS.map((center) => (
+              <option key={center} value={center}>{center}</option>
+            ))}
+          </select>
 
           <button className="hidden lg:flex h-10 px-4 rounded-xl border items-center gap-2 text-sm text-gray-600" style={{ borderColor: 'var(--border)', background: '#fff' }}>
 

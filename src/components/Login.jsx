@@ -32,6 +32,7 @@ export default function Login({ initialMode = 'login' }) {
     const [otpChannel, setOtpChannel] = useState('');
     const [otpDestination, setOtpDestination] = useState('');
     const [otpExpiresIn, setOtpExpiresIn] = useState(null);
+    const [otpExpiresAt, setOtpExpiresAt] = useState(null);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -47,6 +48,31 @@ export default function Login({ initialMode = 'login' }) {
         setLoading(false);
     }, [initialMode]);
 
+    useEffect(() => {
+        if (registerStep !== 'otp' || !otpExpiresAt) {
+            return;
+        }
+
+        const updateRemaining = () => {
+            const remainingSeconds = Math.max(0, Math.ceil((otpExpiresAt - Date.now()) / 1000));
+            setOtpExpiresIn(remainingSeconds);
+            return remainingSeconds;
+        };
+
+        if (updateRemaining() <= 0) {
+            return;
+        }
+
+        const intervalId = window.setInterval(() => {
+            const remaining = updateRemaining();
+            if (remaining <= 0) {
+                window.clearInterval(intervalId);
+            }
+        }, 1000);
+
+        return () => window.clearInterval(intervalId);
+    }, [registerStep, otpExpiresAt]);
+
     const clearRegisterOtpState = () => {
         setRegisterStep('form');
         setVerificationId('');
@@ -54,6 +80,7 @@ export default function Login({ initialMode = 'login' }) {
         setOtpChannel('');
         setOtpDestination('');
         setOtpExpiresIn(null);
+        setOtpExpiresAt(null);
     };
 
     const switchMode = (nextMode) => {
@@ -169,8 +196,19 @@ export default function Login({ initialMode = 'login' }) {
         setOtpCode('');
         setOtpChannel(data.channel || registerContactMethod);
         setOtpDestination(data.destination || '');
-        setOtpExpiresIn(Number(data.expiresIn) || null);
+        const expiresInSeconds = Number(data.expiresIn);
+        const normalizedExpiresIn = Number.isFinite(expiresInSeconds) && expiresInSeconds > 0
+            ? Math.floor(expiresInSeconds)
+            : null;
+        setOtpExpiresIn(normalizedExpiresIn);
+        setOtpExpiresAt(normalizedExpiresIn ? Date.now() + normalizedExpiresIn * 1000 : null);
         setRegisterStep('otp');
+
+        if (data?.debugOtp) {
+            setInfo(`Debug OTP: ${data.debugOtp}`);
+            return;
+        }
+
         setInfo('Tasdiqlash kodi yuborildi. Kodni kiriting.');
     };
 
@@ -400,8 +438,8 @@ export default function Login({ initialMode = 'login' }) {
                                             type="button"
                                             onClick={() => setRegisterContactMethod(CONTACT_EMAIL)}
                                             className={`rounded-xl py-2 text-sm font-bold border transition ${registerContactMethod === CONTACT_EMAIL
-                                                    ? 'text-white border-transparent'
-                                                    : 'text-emerald-700 border-emerald-200 bg-emerald-50'
+                                                ? 'text-white border-transparent'
+                                                : 'text-emerald-700 border-emerald-200 bg-emerald-50'
                                                 }`}
                                             style={{
                                                 background:
@@ -417,8 +455,8 @@ export default function Login({ initialMode = 'login' }) {
                                             type="button"
                                             onClick={() => setRegisterContactMethod(CONTACT_PHONE)}
                                             className={`rounded-xl py-2 text-sm font-bold border transition ${registerContactMethod === CONTACT_PHONE
-                                                    ? 'text-white border-transparent'
-                                                    : 'text-emerald-700 border-emerald-200 bg-emerald-50'
+                                                ? 'text-white border-transparent'
+                                                : 'text-emerald-700 border-emerald-200 bg-emerald-50'
                                                 }`}
                                             style={{
                                                 background:
@@ -516,7 +554,7 @@ export default function Login({ initialMode = 'login' }) {
                                         Kanal: {otpChannel || registerContactMethod}
                                         {otpDestination ? ` • ${otpDestination}` : ''}
                                     </p>
-                                    {otpExpiresIn ? <p className="mt-1">Amal qilish muddati: {otpExpiresIn} soniya</p> : null}
+                                    {otpExpiresIn !== null ? <p className="mt-1">Amal qilish muddati: {otpExpiresIn} soniya</p> : null}
                                 </div>
 
                                 <div>
