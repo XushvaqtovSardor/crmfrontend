@@ -127,6 +127,7 @@ export default function Login({ initialMode = 'login' }) {
             phone: undefined,
             password: registerPassword,
             birthDate: registerBirthDate,
+            role: 'STUDENT',
         };
 
         if (!registerBirthDate) {
