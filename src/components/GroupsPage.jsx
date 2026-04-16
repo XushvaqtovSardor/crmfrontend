@@ -435,14 +435,22 @@ export default function GroupsPage() {
                   const dayText = (group.weekDays || []).map((day) => DAY_LABELS[day] || day).join(', ');
                   const isActive = group.status !== 'INACTIVE';
                   const rowStudents = getStudentCount(group);
+                  const openGroupDetails = () => navigate(`/groups/${group.id}?tab=attendance`);
 
                   return (
-                    <tr key={group.id} className="border-b border-[#f1f4fa] hover:bg-[#fcfdff] transition">
+                    <tr
+                      key={group.id}
+                      className="border-b border-[#f1f4fa] hover:bg-[#fcfdff] transition"
+                      onClick={openGroupDetails}
+                    >
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => updateGroupStatus(group, isActive ? 'INACTIVE' : 'ACTIVE')}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              updateGroupStatus(group, isActive ? 'INACTIVE' : 'ACTIVE');
+                            }}
                             className={`w-8 h-5 rounded-full relative transition ${isActive ? 'bg-violet-500' : 'bg-gray-300'}`}
                             disabled={saving}
                           >
@@ -453,7 +461,19 @@ export default function GroupsPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900">{group.name}</td>
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openGroupDetails();
+                          }}
+                          className="hover:text-violet-600"
+                          title="Guruh ma'lumotlarini ochish"
+                        >
+                          {group.name}
+                        </button>
+                      </td>
                       <td className="py-3 px-4">
                         <span className="text-xs px-2.5 py-1 rounded-full border border-violet-200 text-violet-600 bg-violet-50">
                           {group.course?.name || '--'}
@@ -503,7 +523,7 @@ export default function GroupsPage() {
                                 type="button"
                                 onClick={() => {
                                   setMenuGroupId(null);
-                                  navigate(`/groups/${group.id}`);
+                                  navigate(`/groups/${group.id}?tab=attendance`);
                                 }}
                                 className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                               >

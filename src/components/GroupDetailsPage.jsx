@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsLeft, ChevronsRight, Coins, Download, Edit3, History, Loader2, Plus, RefreshCcw, Snowflake, Trash2, UserPlus, X, } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
@@ -41,6 +41,13 @@ const WEEKDAY_INDEX = {
     SATURDAY: 5,
     SUNDAY: 6,
 };
+const GROUP_TABS = ['attendance', 'coin', 'history'];
+function normalizeGroupTab(value) {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (GROUP_TABS.includes(normalized))
+        return normalized;
+    return 'attendance';
+}
 function normalizeList(payload) {
     if (Array.isArray(payload?.data?.data?.data))
         return payload.data.data.data;
@@ -152,26 +159,38 @@ function exportToExcel(fileName, headers, rows) {
     const bodyHtml = rows
         .map((row) => `<tr>${row.map((cell) => `<td>${String(cell ?? '')}</td>`).join('')}</tr>`)
         .join('');
-    const table = `
-            <table>
-                  <thead><tr>${headHtml}</tr></thead>
-                  <tbody>${bodyHtml}</tbody>
-            </table>
+    const table = `
+
+            <table>
+
+                  <thead><tr>${headHtml}</tr></thead>
+
+                  <tbody>${bodyHtml}</tbody>
+
+            </table>
+
       `;
     downloadFile(table, fileName, 'application/vnd.ms-excel;charset=utf-8;');
 }
 function SidebarSection({ title, open, onToggle, children }) {
-    return (<section className="rounded-2xl border border-[#e6ebf6] overflow-hidden bg-[#fafbff]">
-                  <button type="button" onClick={onToggle} className="w-full px-4 py-3 text-left flex items-center justify-between">
-                        <span className="text-base font-semibold text-gray-800">{title}</span>
-                        {open ? <ChevronUp size={18} className="text-gray-500"/> : <ChevronDown size={18} className="text-gray-500"/>}
-                  </button>
-                  {open && <div className="px-4 pb-4">{children}</div>}
-            </section>);
+    return (<section className="rounded-2xl border border-[#e6ebf6] overflow-hidden bg-[#fafbff]">
+
+        <button type="button" onClick={onToggle} className="w-full px-4 py-3 text-left flex items-center justify-between">
+
+            <span className="text-base font-semibold text-gray-800">{title}</span>
+
+            {open ? <ChevronUp size={18} className="text-gray-500" /> : <ChevronDown size={18} className="text-gray-500" />}
+
+        </button>
+
+        {open && <div className="px-4 pb-4">{children}</div>}
+
+    </section>);
 }
 export default function GroupDetailsPage() {
     const navigate = useNavigate();
     const { id } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
     const groupId = Number(id);
     const [group, setGroup] = useState(null);
@@ -186,7 +205,7 @@ export default function GroupDetailsPage() {
     const [studentSearch, setStudentSearch] = useState('');
     const [studentId, setStudentId] = useState('');
     const [error, setError] = useState('');
-    const [activeTab, setActiveTab] = useState('attendance');
+    const [activeTab, setActiveTab] = useState(() => normalizeGroupTab(searchParams.get('tab')));
     const [focusDate, setFocusDate] = useState(new Date());
     const [attendanceLoading, setAttendanceLoading] = useState(false);
     const [attendanceSavingKey, setAttendanceSavingKey] = useState('');
@@ -199,6 +218,13 @@ export default function GroupDetailsPage() {
         teacher: true,
         students: true,
     });
+    const openTab = useCallback((tabName) => {
+        const nextTab = normalizeGroupTab(tabName);
+        setActiveTab(nextTab);
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set('tab', nextTab);
+        setSearchParams(nextParams, { replace: true });
+    }, [searchParams, setSearchParams]);
     const attendanceColumns = useMemo(() => buildAttendanceColumns(focusDate, group?.weekDays || []), [focusDate, group?.weekDays]);
     const monthLabel = useMemo(() => focusDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long' }), [focusDate]);
     const groupStudents = useMemo(() => (group?.studentGroup || []).map((membership) => membership.student).filter(Boolean), [group]);
@@ -263,10 +289,10 @@ export default function GroupDetailsPage() {
         const lessonHistory = (group.lessons || [])
             .filter((lesson) => !String(lesson.title || '').startsWith('__ATTENDANCE__'))
             .map((lesson) => ({
-            id: `lesson-${lesson.id}`,
-            date: lesson.created_at,
-            text: `Yangi dars qo'shildi: ${lesson.title}`,
-        }));
+                id: `lesson-${lesson.id}`,
+                date: lesson.created_at,
+                text: `Yangi dars qo'shildi: ${lesson.title}`,
+            }));
         const studentHistory = (group.studentGroup || []).map((membership) => ({
             id: `student-${membership.id}`,
             date: membership.created_at,
@@ -361,6 +387,16 @@ export default function GroupDetailsPage() {
         loadGroup();
         loadMeta();
     }, [loadGroup, loadMeta]);
+    useEffect(() => {
+        const nextTab = normalizeGroupTab(searchParams.get('tab'));
+        if (searchParams.get('tab') !== nextTab) {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.set('tab', nextTab);
+            setSearchParams(nextParams, { replace: true });
+            return;
+        }
+        setActiveTab(nextTab);
+    }, [searchParams, setSearchParams]);
     useEffect(() => {
         if (!group)
             return;
@@ -587,408 +623,768 @@ export default function GroupDetailsPage() {
         exportToCsv(`tarix-${group.name}.csv`, headers, rows);
     };
     if (loading) {
-        return (<div className="space-y-4">
-                        <div className="h-16 rounded-2xl bg-white border border-[#e7ecf6] animate-pulse"/>
-                        <div className="h-80 rounded-2xl bg-white border border-[#e7ecf6] animate-pulse"/>
-                  </div>);
+        return (<div className="space-y-4">
+
+            <div className="h-16 rounded-2xl bg-white border border-[#e7ecf6] animate-pulse" />
+
+            <div className="h-80 rounded-2xl bg-white border border-[#e7ecf6] animate-pulse" />
+
+        </div>);
     }
     if (!group) {
-        return (<div className="bg-white rounded-2xl border border-red-200 px-6 py-6">
-                        <p className="text-red-600 font-medium">Guruh topilmadi yoki o'chirib yuborilgan.</p>
-                        <button type="button" onClick={() => navigate('/groups')} className="mt-4 h-10 px-4 rounded-xl bg-violet-500 text-white text-sm font-semibold">
-                              Guruhlarga qaytish
-                        </button>
-                  </div>);
+        return (<div className="bg-white rounded-2xl border border-red-200 px-6 py-6">
+
+            <p className="text-red-600 font-medium">Guruh topilmadi yoki o'chirib yuborilgan.</p>
+
+            <button type="button" onClick={() => navigate('/groups')} className="mt-4 h-10 px-4 rounded-xl bg-violet-500 text-white text-sm font-semibold">
+
+                Guruhlarga qaytish
+
+            </button>
+
+        </div>);
     }
-    return (<div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                              <button type="button" onClick={() => navigate('/groups')} className="h-10 px-4 rounded-xl border border-[#dfe4ef] bg-white text-gray-700 text-sm font-semibold flex items-center gap-2">
-                                    <ArrowLeft size={16}/> Guruhlar
-                              </button>
-
-                              <button type="button" onClick={toggleGroupStatus} disabled={saving} className={`w-11 h-6 rounded-full relative transition ${group.status !== 'INACTIVE' ? 'bg-violet-500' : 'bg-gray-300'}`}>
-                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition ${group.status !== 'INACTIVE' ? 'left-5.5' : 'left-0.5'}`}/>
-                              </button>
-
-                              <h1 className="text-4xl font-semibold text-gray-900">{group.name}</h1>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                              <button type="button" onClick={() => setShowEditModal(true)} className="h-11 px-5 rounded-xl border border-[#dfe4ef] bg-white text-gray-800 text-sm font-semibold inline-flex items-center gap-2">
-                                    <Edit3 size={16}/> Tahrirlash
-                              </button>
-                              <button type="button" onClick={() => setShowEditModal(true)} className="h-11 px-5 rounded-xl border border-[#dfe4ef] bg-white text-gray-800 text-sm font-semibold inline-flex items-center gap-2">
-                                    <Plus size={16}/> O'qituvchi qo'shish
-                              </button>
-                              <button type="button" onClick={() => setShowStudentModal(true)} className="h-11 px-5 rounded-xl border border-[#dfe4ef] bg-white text-gray-800 text-sm font-semibold inline-flex items-center gap-2">
-                                    <Plus size={16}/> O'quvchi qo'shish
-                              </button>
-                              <button type="button" onClick={archiveGroup} className="w-11 h-11 rounded-xl bg-red-500 text-white inline-flex items-center justify-center disabled:opacity-70" disabled={saving}>
-                                    <Trash2 size={18}/>
-                              </button>
-                        </div>
-                  </div>
-
-                  {error && (<div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                              {error}
-                        </div>)}
-
-                  <div className="grid grid-cols-1 xl:grid-cols-[340px,1fr] gap-4">
-                        <aside className="space-y-3">
-                              <SidebarSection title="Ma'lumotlar" open={openSections.info} onToggle={() => toggleSection('info')}>
-                                    <div className="space-y-3 text-sm">
-                                          <div>
-                                                <p className="text-gray-500">Kurs</p>
-                                                <p className="font-medium text-gray-800">{group.course?.name || '--'}</p>
-                                          </div>
-                                          <div>
-                                                <p className="text-gray-500">Boshlanish</p>
-                                                <p className="font-medium text-gray-800">{formatDate(group.startDate)}</p>
-                                          </div>
-                                          <div>
-                                                <p className="text-gray-500">Dars vaqti</p>
-                                                <p className="font-medium text-gray-800">{group.startTime || '--:--'} ({formatDays(group.weekDays)})</p>
-                                          </div>
-                                          <div>
-                                                <p className="text-gray-500">Xona</p>
-                                                <p className="font-medium text-gray-800">{group.room?.name || '--'}</p>
-                                          </div>
-                                    </div>
-                              </SidebarSection>
-
-                              <SidebarSection title="O'qituvchilar" open={openSections.teacher} onToggle={() => toggleSection('teacher')}>
-                                    <div className="rounded-xl border border-[#e6ebf6] bg-white px-3 py-2">
-                                          <p className="text-sm font-semibold text-gray-900">{group.teacher?.fullName || "O'qituvchi yo'q"}</p>
-                                          <p className="text-xs text-gray-500 mt-1">{group.teacher?.email || '--'}</p>
-                                    </div>
-                              </SidebarSection>
-
-                              <SidebarSection title="Talabalar" open={openSections.students} onToggle={() => toggleSection('students')}>
-                                    <div className="space-y-2 max-h-107.5 overflow-auto pr-1">
-                                          {group.studentGroup?.length > 0 ? (group.studentGroup.map((membership) => (<div key={membership.id} className="rounded-xl border border-[#e6ebf6] bg-white px-3 py-2 flex items-center justify-between">
-                                                            <div>
-                                                                  <p className="text-sm font-semibold text-gray-900">{membership.student?.fullName || '--'}</p>
-                                                                  <p className="text-xs text-gray-500">{membership.student?.email || '--'}</p>
-                                                            </div>
-
-                                                            <div className="flex items-center gap-2">
-                                                                  <span className="text-xs text-emerald-600 font-semibold">Faol</span>
-                                                                  <button type="button" onClick={() => removeStudentFromGroup(membership.studentId, membership.student?.fullName)} disabled={studentRemovingId === Number(membership.studentId)} title="Talabani guruhdan chiqarish" className="w-8 h-8 rounded-lg border border-red-100 text-red-500 hover:bg-red-50 inline-flex items-center justify-center disabled:opacity-60">
-                                                                        {studentRemovingId === Number(membership.studentId)
-                ? <Loader2 size={14} className="animate-spin"/>
-                : <X size={14}/>}
-                                                                  </button>
-                                                            </div>
-                                                      </div>))) : (<p className="text-sm text-gray-400">Hozircha talaba biriktirilmagan</p>)}
-                                    </div>
-                              </SidebarSection>
-                        </aside>
-
-                        <section className="bg-white rounded-2xl border border-[#e6ebf6] overflow-hidden">
-                              <div className="px-4 py-3 border-b border-[#e9edf5] flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2">
-                                          <button type="button" onClick={() => setActiveTab('attendance')} className={`h-9 px-4 rounded-xl text-sm font-semibold ${activeTab === 'attendance' ? 'bg-white border border-[#dfe4ef] text-gray-800' : 'text-gray-500 bg-[#f5f7fd]'}`}>
-                                                Davomat
-                                          </button>
-                                          <button type="button" onClick={() => setActiveTab('coin')} className={`h-9 px-4 rounded-xl text-sm font-semibold ${activeTab === 'coin' ? 'bg-white border border-[#dfe4ef] text-gray-800' : 'text-gray-500 bg-[#f5f7fd]'}`}>
-                                                Coin
-                                          </button>
-                                          <button type="button" onClick={() => setActiveTab('history')} className={`h-9 px-4 rounded-xl text-sm font-semibold ${activeTab === 'history' ? 'bg-white border border-[#dfe4ef] text-gray-800' : 'text-gray-500 bg-[#f5f7fd]'}`}>
-                                                Tarix
-                                          </button>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                          {(activeTab === 'attendance' || activeTab === 'history') && (<>
-                                                      <button type="button" onClick={() => activeTab === 'attendance' ? exportAttendance('csv') : exportHistory('csv')} className="h-10 px-3 rounded-xl border border-[#dfe4ef] bg-white text-gray-700 text-sm font-semibold inline-flex items-center gap-2">
-                                                            <Download size={15}/> CSV
-                                                      </button>
-                                                      <button type="button" onClick={() => activeTab === 'attendance' ? exportAttendance('excel') : exportHistory('excel')} className="h-10 px-3 rounded-xl border border-[#dfe4ef] bg-white text-gray-700 text-sm font-semibold inline-flex items-center gap-2">
-                                                            <Download size={15}/> Excel
-                                                      </button>
-                                                </>)}
-
-                                          <button type="button" onClick={() => {
-            loadGroup();
-            loadAttendance(attendanceColumns.map((column) => column.key));
-        }} className="w-10 h-10 rounded-xl border border-[#dfe4ef] bg-white text-gray-500 flex items-center justify-center" title="Yangilash">
-                                                <RefreshCcw size={16}/>
-                                          </button>
-                                    </div>
-                              </div>
-
-                              {activeTab === 'attendance' && (<div className="p-4">
-                                          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                                                <div className="flex items-center gap-2">
-                                                      <input type="date" value={toDateKey(focusDate)} onChange={(event) => updateFocusDate(event.target.value)} className="h-9 px-3 rounded-xl border border-[#dfe4ef] bg-white text-sm text-gray-700"/>
-                                                      <button type="button" onClick={() => setFocusDate(new Date())} className="h-9 px-3 rounded-xl border border-[#dfe4ef] bg-white text-sm font-semibold text-gray-700">
-                                                            Bugun
-                                                      </button>
-                                                </div>
-
-                                                <div className="flex items-center justify-end gap-1">
-                                                      <button type="button" onClick={() => setFocusDate((prev) => addMonths(prev, -1))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
-                                                            <ChevronsLeft size={16}/>
-                                                      </button>
-                                                      <button type="button" onClick={() => setFocusDate((prev) => addDays(prev, -7))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
-                                                            <ChevronLeft size={16}/>
-                                                      </button>
-                                                      <p className="w-44 text-center text-xl font-semibold text-gray-700 capitalize">{monthLabel}</p>
-                                                      <button type="button" onClick={() => setFocusDate((prev) => addDays(prev, 7))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
-                                                            <ChevronRight size={16}/>
-                                                      </button>
-                                                      <button type="button" onClick={() => setFocusDate((prev) => addMonths(prev, 1))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
-                                                            <ChevronsRight size={16}/>
-                                                      </button>
-                                                </div>
-                                          </div>
-
-                                          <div className="overflow-x-auto">
-                                                <table className="w-full min-w-190">
-                                                      <thead>
-                                                            <tr className="border border-[#e9edf5] bg-[#fafbff]">
-                                                                  <th className="text-left py-3 px-4 text-xl font-semibold text-gray-700 border-r border-[#e9edf5]">Nomi</th>
-                                                                  {attendanceColumns.map((column) => (<th key={column.key} className="text-center py-2 px-3 text-sm font-semibold text-gray-600 border-r last:border-r-0 border-[#e9edf5]">
-                                                                              <p>{column.dayLabel}</p>
-                                                                              <p className="text-xl text-gray-700 mt-1">{column.dayNumber}</p>
-                                                                              <button type="button" onClick={() => resetAttendance(column.key)} disabled={attendanceResetKey === `${column.key}:reset` || attendanceLoading} className="mt-1 mx-auto w-6 h-6 rounded-md text-gray-400 hover:bg-gray-100 inline-flex items-center justify-center disabled:opacity-60" title="Shu sana davomatini reset qilish">
-                                                                                    {attendanceResetKey === `${column.key}:reset`
-                    ? <Loader2 size={13} className="animate-spin"/>
-                    : <RefreshCcw size={13}/>}
-                                                                              </button>
-                                                                        </th>))}
-                                                            </tr>
-                                                      </thead>
-                                                      <tbody>
-                                                            {groupStudents.length > 0 ? (groupStudents.map((student) => (<tr key={student.id} className="border-b border-x border-[#eef2f8]">
-                                                                              <td className="py-3 px-4">
-                                                                                    <div className="flex items-center gap-3">
-                                                                                          <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-700 inline-flex items-center justify-center font-semibold text-sm">
-                                                                                                {String(student.fullName || 'S').charAt(0).toUpperCase()}
-                                                                                          </div>
-                                                                                          <div>
-                                                                                                <p className="text-[28px] leading-tight font-medium text-[#27314f]">{student.fullName}</p>
-                                                                                                <p className="text-sm text-gray-500">Active</p>
-                                                                                          </div>
-                                                                                    </div>
-                                                                              </td>
-
-                                                                              {attendanceColumns.map((column, columnIndex) => {
-                    const row = attendanceLookup[column.key]?.get(Number(student.id));
-                    const status = row?.isPresent;
-                    const requestKey = `${column.key}:${student.id}`;
-                    const isBusy = attendanceSavingKey === requestKey;
-                    const resetKey = `${column.key}:${student.id}:reset`;
-                    const isFreeze = String(student.status || '').toUpperCase() === 'FREEZE';
-                    return (<td key={`${student.id}-${column.key}`} className="py-3 px-3 border-l border-[#eef2f8]">
-                                                                                                {attendanceLoading && !row ? (<div className="flex justify-center">
-                                                                                                            <div className="w-16 h-8 rounded-full bg-gray-100 animate-pulse"/>
-                                                                                                      </div>) : isBusy || attendanceResetKey === resetKey ? (<div className="flex justify-center">
-                                                                                                            <Loader2 size={18} className="animate-spin text-violet-500"/>
-                                                                                                      </div>) : isFreeze ? (<div className="flex justify-center">
-                                                                                                            <div className="h-11 min-w-24 px-4 rounded-full border border-[#b9d6ff] bg-[#e8f2ff] text-[#4a8ed8] inline-flex items-center justify-center">
-                                                                                                                  <Snowflake size={16}/>
-                                                                                                            </div>
-                                                                                                      </div>) : columnIndex === 0 ? (<div className="flex justify-center">
-                                                                                                            <div className="h-11 rounded-full border border-[#d8deeb] overflow-hidden inline-flex">
-                                                                                                                  <button type="button" onClick={() => setAttendance(student.id, column.key, true)} className={`w-12 h-full inline-flex items-center justify-center transition ${status === true ? 'bg-[#c9f0ea] text-[#10b29f]' : 'bg-white text-gray-400 hover:bg-gray-50'}`}>
-                                                                                                                        <Check size={18}/>
-                                                                                                                  </button>
-                                                                                                                  <button type="button" onClick={() => setAttendance(student.id, column.key, false)} className={`w-12 h-full inline-flex items-center justify-center border-l border-[#d8deeb] transition ${status === false ? 'bg-[#ffe0e3] text-[#ef4444]' : 'bg-white text-gray-400 hover:bg-gray-50'}`}>
-                                                                                                                        <X size={18}/>
-                                                                                                                  </button>
-                                                                                                            </div>
-                                                                                                      </div>) : (<div className="flex items-center justify-center gap-1">
-                                                                                                            <button type="button" onClick={() => {
-                                if (status === true) {
-                                    setAttendance(student.id, column.key, false);
-                                    return;
-                                }
-                                setAttendance(student.id, column.key, true);
-                            }} className={`h-11 min-w-24 px-4 rounded-full text-base font-semibold border inline-flex items-center justify-center gap-2 ${status === true
-                                ? 'bg-[#14b8a6] border-[#14b8a6] text-white'
-                                : status === false
-                                    ? 'bg-[#ff384c] border-[#ff384c] text-white'
-                                    : 'bg-white border-[#d8deeb] text-gray-300'}`}>
-                                                                                                                  {status === true && <Check size={16}/>}
-                                                                                                                  {status === false && <X size={16}/>}
-                                                                                                                  {status === true ? 'Bor' : status === false ? "Yo'q" : ''}
-                                                                                                            </button>
-
-                                                                                                            {status !== null && (<button type="button" onClick={() => resetAttendance(column.key, student.id)} disabled={attendanceResetKey === resetKey} className="w-8 h-8 rounded-lg text-gray-400 hover:bg-gray-100 inline-flex items-center justify-center disabled:opacity-60" title="Bitta qator davomatini reset qilish">
-                                                                                                                        <RefreshCcw size={14}/>
-                                                                                                                  </button>)}
-                                                                                                      </div>)}
-                                                                                          </td>);
-                })}
-                                                                        </tr>))) : (<tr>
-                                                                        <td colSpan={1 + attendanceColumns.length} className="py-16 text-center text-sm text-gray-400 border border-[#eef2f8]">
-                                                                              Guruhda talabalar yo'q
-                                                                        </td>
-                                                                  </tr>)}
-                                                      </tbody>
-                                                </table>
-                                          </div>
-                                    </div>)}
-
-                              {activeTab === 'coin' && (<div className="p-4">
-                                          <div className="flex items-center justify-end gap-1 mb-3">
-                                                <button type="button" onClick={() => setFocusDate((prev) => addMonths(prev, -1))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
-                                                      <ChevronsLeft size={16}/>
-                                                </button>
-                                                <button type="button" onClick={() => setFocusDate((prev) => addDays(prev, -7))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
-                                                      <ChevronLeft size={16}/>
-                                                </button>
-                                                <p className="w-44 text-center text-xl font-semibold text-gray-700 capitalize">{monthLabel}</p>
-                                                <button type="button" onClick={() => setFocusDate((prev) => addDays(prev, 7))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
-                                                      <ChevronRight size={16}/>
-                                                </button>
-                                                <button type="button" onClick={() => setFocusDate((prev) => addMonths(prev, 1))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
-                                                      <ChevronsRight size={16}/>
-                                                </button>
-                                          </div>
-
-                                          <div className="overflow-x-auto">
-                                                <table className="w-full min-w-190">
-                                                      <thead>
-                                                            <tr className="border border-[#e9edf5] bg-[#fafbff]">
-                                                                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-500 uppercase border-r border-[#e9edf5]">Nomi</th>
-                                                                  {attendanceColumns.map((column) => (<th key={column.key} className="text-center py-2 px-3 text-sm font-semibold text-gray-600 border-r last:border-r-0 border-[#e9edf5]">
-                                                                              <p>{column.dayLabel}</p>
-                                                                              <p className="text-xl text-gray-700 mt-1">{column.dayNumber}</p>
-                                                                        </th>))}
-                                                            </tr>
-                                                      </thead>
-
-                                                      <tbody>
-                                                            {groupStudents.map((student) => (<tr key={`coin-${student.id}`} className="border-b border-x border-[#eef2f8]">
-                                                                        <td className="py-3 px-4 border-r border-[#eef2f8]">
-                                                                              <div className="flex items-center gap-3">
-                                                                                    <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-700 inline-flex items-center justify-center font-semibold text-sm">
-                                                                                          {String(student.fullName || 'S').charAt(0).toUpperCase()}
-                                                                                    </div>
-                                                                                    <div>
-                                                                                          <p className="text-3xl leading-tight font-medium text-[#27314f]">{student.fullName}</p>
-                                                                                          <p className="text-sm text-gray-500">Active</p>
-                                                                                    </div>
-                                                                              </div>
-                                                                        </td>
-
-                                                                        {attendanceColumns.map((column) => {
-                    const status = attendanceLookup[column.key]?.get(Number(student.id))?.isPresent;
-                    const value = status === true ? 10 : status === false ? 0 : '-';
-                    return (<td key={`coin-${student.id}-${column.key}`} className="py-3 px-3 text-center border-l border-[#eef2f8]">
-                                                                                          <span className={`text-2xl ${value === '-' ? 'text-gray-300' : 'text-[#b8bfce]'}`}>{value}</span>
-                                                                                    </td>);
-                })}
-                                                                  </tr>))}
-                                                      </tbody>
-                                                </table>
-                                          </div>
-
-                                          <div className="mt-4 rounded-xl border border-[#e7ecf6] bg-[#fafbff] px-4 py-3 inline-flex items-center gap-3">
-                                                <Coins size={17} className="text-violet-500"/>
-                                                <p className="text-sm text-gray-600">Jami coin:</p>
-                                                <p className="text-lg font-semibold text-gray-800">{coinSummary.earned}</p>
-                                          </div>
-                                    </div>)}
-
-                              {activeTab === 'history' && (<div className="p-4">
-                                          <div className="rounded-2xl border border-[#e7ecf6] overflow-hidden">
-                                                <div className="px-4 py-3 bg-[#fafbff] border-b border-[#e7ecf6] text-sm font-semibold text-gray-700 inline-flex items-center gap-2">
-                                                      <History size={16} className="text-violet-500"/> O'zgarishlar tarixi
-                                                </div>
-
-                                                <div className="divide-y divide-[#f1f4fa]">
-                                                      {activityHistory.length > 0 ? activityHistory.map((item) => (<div key={item.id} className="px-4 py-3 flex items-start justify-between gap-3">
-                                                                  <div>
-                                                                        <p className="text-sm font-medium text-gray-800">{item.text}</p>
-                                                                        <p className="text-xs text-gray-500 mt-1">{formatDateTime(item.date)}</p>
-                                                                  </div>
-                                                                  <CalendarDays size={16} className="text-gray-300 shrink-0"/>
-                                                            </div>)) : (<p className="px-4 py-8 text-sm text-gray-400 text-center">Tarix bo'sh</p>)}
-                                                </div>
-                                          </div>
-                                    </div>)}
-                        </section>
-                  </div>
-
-                  {showEditModal && (<div className="fixed inset-0 z-50 flex items-center justify-center">
-                              <div className="absolute inset-0 bg-black/40" onClick={() => setShowEditModal(false)}/>
-
-                              <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-                                    <div className="flex items-center justify-between mb-5">
-                                          <h3 className="text-lg font-bold text-gray-900">Guruhni tahrirlash</h3>
-                                          <button type="button" onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
-                                                <X size={20}/>
-                                          </button>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                          <Inp label="Guruh nomi" value={form.name} onChange={(value) => setForm({ ...form, name: value })}/>
-                                          <Sel label="O'qituvchi" value={form.teacherId} onChange={(value) => setForm({ ...form, teacherId: value })} options={teachers.map((teacher) => ({ value: String(teacher.id), label: teacher.fullName }))}/>
-                                          <Sel label="Kurs" value={form.courseId} onChange={(value) => setForm({ ...form, courseId: value })} options={courses.map((course) => ({ value: String(course.id), label: course.name }))}/>
-                                          <Sel label="Xona" value={form.roomId} onChange={(value) => setForm({ ...form, roomId: value })} options={rooms.map((room) => ({ value: String(room.id), label: `${room.name} (${room.capacity} o'rin)` }))}/>
-                                          <Inp label="Boshlanish sanasi" value={form.startDate} onChange={(value) => setForm({ ...form, startDate: value })} type="date"/>
-                                          <Inp label="Boshlanish vaqti" value={form.startTime} onChange={(value) => setForm({ ...form, startTime: value })} type="time"/>
-
-                                          <div>
-                                                <label className="block text-sm font-semibold text-gray-700 mb-2">Hafta kunlari</label>
-                                                <div className="flex flex-wrap gap-2">
-                                                      {DAYS.map((day) => (<button key={day} type="button" onClick={() => toggleDay(day)} className={`px-3 py-2 rounded-xl text-xs font-medium transition ${form.weekDays.includes(day) ? 'bg-violet-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                                                                  {DAY_SHORT[day]}
-                                                            </button>))}
-                                                </div>
-                                          </div>
-
-                                          <button type="button" disabled={saving} onClick={saveGroup} className="w-full bg-violet-500 text-white py-3 rounded-xl font-semibold hover:bg-violet-600 transition disabled:opacity-70">
-                                                {saving ? 'Saqlanmoqda...' : 'Saqlash'}
-                                          </button>
-                                    </div>
-                              </div>
-                        </div>)}
-
-                  {showStudentModal && (<div className="fixed inset-0 z-50 flex items-center justify-center">
-                              <div className="absolute inset-0 bg-black/40" onClick={() => setShowStudentModal(false)}/>
-
-                              <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4">
-                                    <div className="flex items-center justify-between mb-5">
-                                          <h3 className="text-lg font-bold text-gray-900">Talaba qo'shish</h3>
-                                          <button type="button" onClick={() => setShowStudentModal(false)} className="text-gray-400 hover:text-gray-600">
-                                                <X size={20}/>
-                                          </button>
-                                    </div>
-
-                                    <Inp label="Talaba qidirish" value={studentSearch} onChange={setStudentSearch} placeholder="Ism yoki email"/>
-
-                                    <Sel label="Talaba" value={studentId} onChange={setStudentId} options={filteredStudents.map((student) => ({
-                value: String(student.id),
-                label: `${student.fullName} (${student.email})`,
-            }))}/>
-
-                                    {filteredStudents.length === 0 && (<p className="mt-2 text-xs text-gray-400">Qo'shish mumkin bo'lgan talaba topilmadi</p>)}
-
-                                    <button type="button" disabled={saving || !studentId} onClick={addStudent} className="w-full mt-4 bg-emerald-500 text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition disabled:opacity-70 inline-flex items-center justify-center gap-2">
-                                          <UserPlus size={16}/>
-                                          {saving ? "Qo'shilmoqda..." : "Qo'shish"}
-                                    </button>
-                              </div>
-                        </div>)}
-            </div>);
+    return (<div className="space-y-4">
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+
+            <div className="flex items-center gap-3">
+
+                <button type="button" onClick={() => navigate('/groups')} className="h-10 px-4 rounded-xl border border-[#dfe4ef] bg-white text-gray-700 text-sm font-semibold flex items-center gap-2">
+
+                    <ArrowLeft size={16} /> Guruhlar
+
+                </button>
+
+
+
+                <button type="button" onClick={toggleGroupStatus} disabled={saving} className={`w-11 h-6 rounded-full relative transition ${group.status !== 'INACTIVE' ? 'bg-violet-500' : 'bg-gray-300'}`}>
+
+                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition ${group.status !== 'INACTIVE' ? 'left-5.5' : 'left-0.5'}`} />
+
+                </button>
+
+
+
+                <h1 className="text-4xl font-semibold text-gray-900">{group.name}</h1>
+
+            </div>
+
+
+
+            <div className="flex flex-wrap items-center gap-2">
+
+                <button type="button" onClick={() => setShowEditModal(true)} className="h-11 px-5 rounded-xl border border-[#dfe4ef] bg-white text-gray-800 text-sm font-semibold inline-flex items-center gap-2">
+
+                    <Edit3 size={16} /> Tahrirlash
+
+                </button>
+
+                <button type="button" onClick={() => setShowEditModal(true)} className="h-11 px-5 rounded-xl border border-[#dfe4ef] bg-white text-gray-800 text-sm font-semibold inline-flex items-center gap-2">
+
+                    <Plus size={16} /> O'qituvchi qo'shish
+
+                </button>
+
+                <button type="button" onClick={() => setShowStudentModal(true)} className="h-11 px-5 rounded-xl border border-[#dfe4ef] bg-white text-gray-800 text-sm font-semibold inline-flex items-center gap-2">
+
+                    <Plus size={16} /> O'quvchi qo'shish
+
+                </button>
+
+                <button type="button" onClick={archiveGroup} className="w-11 h-11 rounded-xl bg-red-500 text-white inline-flex items-center justify-center disabled:opacity-70" disabled={saving}>
+
+                    <Trash2 size={18} />
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        {error && (<div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+
+            {error}
+
+        </div>)}
+
+
+
+        <div className="grid grid-cols-1 xl:grid-cols-[340px,1fr] gap-4">
+
+            <aside className="space-y-3">
+
+                <SidebarSection title="Ma'lumotlar" open={openSections.info} onToggle={() => toggleSection('info')}>
+
+                    <div className="space-y-3 text-sm">
+
+                        <div>
+
+                            <p className="text-gray-500">Kurs</p>
+
+                            <p className="font-medium text-gray-800">{group.course?.name || '--'}</p>
+
+                        </div>
+
+                        <div>
+
+                            <p className="text-gray-500">Boshlanish</p>
+
+                            <p className="font-medium text-gray-800">{formatDate(group.startDate)}</p>
+
+                        </div>
+
+                        <div>
+
+                            <p className="text-gray-500">Dars vaqti</p>
+
+                            <p className="font-medium text-gray-800">{group.startTime || '--:--'} ({formatDays(group.weekDays)})</p>
+
+                        </div>
+
+                        <div>
+
+                            <p className="text-gray-500">Xona</p>
+
+                            <p className="font-medium text-gray-800">{group.room?.name || '--'}</p>
+
+                        </div>
+
+                    </div>
+
+                </SidebarSection>
+
+
+
+                <SidebarSection title="O'qituvchilar" open={openSections.teacher} onToggle={() => toggleSection('teacher')}>
+
+                    <div className="rounded-xl border border-[#e6ebf6] bg-white px-3 py-2">
+
+                        <p className="text-sm font-semibold text-gray-900">{group.teacher?.fullName || "O'qituvchi yo'q"}</p>
+
+                        <p className="text-xs text-gray-500 mt-1">{group.teacher?.email || '--'}</p>
+
+                    </div>
+
+                </SidebarSection>
+
+
+
+                <SidebarSection title="Talabalar" open={openSections.students} onToggle={() => toggleSection('students')}>
+
+                    <div className="space-y-2 max-h-107.5 overflow-auto pr-1">
+
+                        {group.studentGroup?.length > 0 ? (group.studentGroup.map((membership) => (<div key={membership.id} className="rounded-xl border border-[#e6ebf6] bg-white px-3 py-2 flex items-center justify-between">
+
+                            <div>
+
+                                <p className="text-sm font-semibold text-gray-900">{membership.student?.fullName || '--'}</p>
+
+                                <p className="text-xs text-gray-500">{membership.student?.email || '--'}</p>
+
+                            </div>
+
+
+
+                            <div className="flex items-center gap-2">
+
+                                <span className="text-xs text-emerald-600 font-semibold">Faol</span>
+
+                                <button type="button" onClick={() => removeStudentFromGroup(membership.studentId, membership.student?.fullName)} disabled={studentRemovingId === Number(membership.studentId)} title="Talabani guruhdan chiqarish" className="w-8 h-8 rounded-lg border border-red-100 text-red-500 hover:bg-red-50 inline-flex items-center justify-center disabled:opacity-60">
+
+                                    {studentRemovingId === Number(membership.studentId)
+                                        ? <Loader2 size={14} className="animate-spin" />
+                                        : <X size={14} />}
+
+                                </button>
+
+                            </div>
+
+                        </div>))) : (<p className="text-sm text-gray-400">Hozircha talaba biriktirilmagan</p>)}
+
+                    </div>
+
+                </SidebarSection>
+
+            </aside>
+
+
+
+            <section className="bg-white rounded-2xl border border-[#e6ebf6] overflow-hidden">
+
+                <div className="px-4 py-3 border-b border-[#e9edf5] flex items-center justify-between gap-2">
+
+                    <div className="flex items-center gap-2">
+
+                        <button type="button" onClick={() => openTab('attendance')} className={`h-9 px-4 rounded-xl text-sm font-semibold ${activeTab === 'attendance' ? 'bg-white border border-[#dfe4ef] text-gray-800' : 'text-gray-500 bg-[#f5f7fd]'}`}>
+
+                            Davomat
+
+                        </button>
+
+                        <button type="button" onClick={() => openTab('coin')} className={`h-9 px-4 rounded-xl text-sm font-semibold ${activeTab === 'coin' ? 'bg-white border border-[#dfe4ef] text-gray-800' : 'text-gray-500 bg-[#f5f7fd]'}`}>
+
+                            Coin
+
+                        </button>
+
+                        <button type="button" onClick={() => openTab('history')} className={`h-9 px-4 rounded-xl text-sm font-semibold ${activeTab === 'history' ? 'bg-white border border-[#dfe4ef] text-gray-800' : 'text-gray-500 bg-[#f5f7fd]'}`}>
+
+                            Tarix
+
+                        </button>
+
+                    </div>
+
+
+
+                    <div className="flex items-center gap-2">
+
+                        {(activeTab === 'attendance' || activeTab === 'history') && (<>
+
+                            <button type="button" onClick={() => activeTab === 'attendance' ? exportAttendance('csv') : exportHistory('csv')} className="h-10 px-3 rounded-xl border border-[#dfe4ef] bg-white text-gray-700 text-sm font-semibold inline-flex items-center gap-2">
+
+                                <Download size={15} /> CSV
+
+                            </button>
+
+                            <button type="button" onClick={() => activeTab === 'attendance' ? exportAttendance('excel') : exportHistory('excel')} className="h-10 px-3 rounded-xl border border-[#dfe4ef] bg-white text-gray-700 text-sm font-semibold inline-flex items-center gap-2">
+
+                                <Download size={15} /> Excel
+
+                            </button>
+
+                        </>)}
+
+
+
+                        <button type="button" onClick={() => {
+                            loadGroup();
+                            loadAttendance(attendanceColumns.map((column) => column.key));
+                        }} className="w-10 h-10 rounded-xl border border-[#dfe4ef] bg-white text-gray-500 flex items-center justify-center" title="Yangilash">
+
+                            <RefreshCcw size={16} />
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                {activeTab === 'attendance' && (<div className="p-4">
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+
+                        <div className="flex items-center gap-2">
+
+                            <input type="date" value={toDateKey(focusDate)} onChange={(event) => updateFocusDate(event.target.value)} className="h-9 px-3 rounded-xl border border-[#dfe4ef] bg-white text-sm text-gray-700" />
+
+                            <button type="button" onClick={() => setFocusDate(new Date())} className="h-9 px-3 rounded-xl border border-[#dfe4ef] bg-white text-sm font-semibold text-gray-700">
+
+                                Bugun
+
+                            </button>
+
+                        </div>
+
+
+
+                        <div className="flex items-center justify-end gap-1">
+
+                            <button type="button" onClick={() => setFocusDate((prev) => addMonths(prev, -1))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
+
+                                <ChevronsLeft size={16} />
+
+                            </button>
+
+                            <button type="button" onClick={() => setFocusDate((prev) => addDays(prev, -7))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
+
+                                <ChevronLeft size={16} />
+
+                            </button>
+
+                            <p className="w-44 text-center text-xl font-semibold text-gray-700 capitalize">{monthLabel}</p>
+
+                            <button type="button" onClick={() => setFocusDate((prev) => addDays(prev, 7))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
+
+                                <ChevronRight size={16} />
+
+                            </button>
+
+                            <button type="button" onClick={() => setFocusDate((prev) => addMonths(prev, 1))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
+
+                                <ChevronsRight size={16} />
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div className="overflow-x-auto">
+
+                        <table className="w-full min-w-190">
+
+                            <thead>
+
+                                <tr className="border border-[#e9edf5] bg-[#fafbff]">
+
+                                    <th className="text-left py-3 px-4 text-xl font-semibold text-gray-700 border-r border-[#e9edf5]">Nomi</th>
+
+                                    {attendanceColumns.map((column) => (<th key={column.key} className="text-center py-2 px-3 text-sm font-semibold text-gray-600 border-r last:border-r-0 border-[#e9edf5]">
+
+                                        <p>{column.dayLabel}</p>
+
+                                        <p className="text-xl text-gray-700 mt-1">{column.dayNumber}</p>
+
+                                        <button type="button" onClick={() => resetAttendance(column.key)} disabled={attendanceResetKey === `${column.key}:reset` || attendanceLoading} className="mt-1 mx-auto w-6 h-6 rounded-md text-gray-400 hover:bg-gray-100 inline-flex items-center justify-center disabled:opacity-60" title="Shu sana davomatini reset qilish">
+
+                                            {attendanceResetKey === `${column.key}:reset`
+                                                ? <Loader2 size={13} className="animate-spin" />
+                                                : <RefreshCcw size={13} />}
+
+                                        </button>
+
+                                    </th>))}
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody>
+
+                                {groupStudents.length > 0 ? (groupStudents.map((student) => (<tr key={student.id} className="border-b border-x border-[#eef2f8]">
+
+                                    <td className="py-3 px-4">
+
+                                        <div className="flex items-center gap-3">
+
+                                            <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-700 inline-flex items-center justify-center font-semibold text-sm">
+
+                                                {String(student.fullName || 'S').charAt(0).toUpperCase()}
+
+                                            </div>
+
+                                            <div>
+
+                                                <p className="text-[28px] leading-tight font-medium text-[#27314f]">{student.fullName}</p>
+
+                                                <p className="text-sm text-gray-500">Active</p>
+
+                                            </div>
+
+                                        </div>
+
+                                    </td>
+
+
+
+                                    {attendanceColumns.map((column, columnIndex) => {
+                                        const row = attendanceLookup[column.key]?.get(Number(student.id));
+                                        const status = row?.isPresent;
+                                        const requestKey = `${column.key}:${student.id}`;
+                                        const isBusy = attendanceSavingKey === requestKey;
+                                        const resetKey = `${column.key}:${student.id}:reset`;
+                                        const isFreeze = String(student.status || '').toUpperCase() === 'FREEZE';
+                                        return (<td key={`${student.id}-${column.key}`} className="py-3 px-3 border-l border-[#eef2f8]">
+
+                                            {attendanceLoading && !row ? (<div className="flex justify-center">
+
+                                                <div className="w-16 h-8 rounded-full bg-gray-100 animate-pulse" />
+
+                                            </div>) : isBusy || attendanceResetKey === resetKey ? (<div className="flex justify-center">
+
+                                                <Loader2 size={18} className="animate-spin text-violet-500" />
+
+                                            </div>) : isFreeze ? (<div className="flex justify-center">
+
+                                                <div className="h-11 min-w-24 px-4 rounded-full border border-[#b9d6ff] bg-[#e8f2ff] text-[#4a8ed8] inline-flex items-center justify-center">
+
+                                                    <Snowflake size={16} />
+
+                                                </div>
+
+                                            </div>) : columnIndex === 0 ? (<div className="flex justify-center">
+
+                                                <div className="h-11 rounded-full border border-[#d8deeb] overflow-hidden inline-flex">
+
+                                                    <button type="button" onClick={() => setAttendance(student.id, column.key, true)} className={`w-12 h-full inline-flex items-center justify-center transition ${status === true ? 'bg-[#c9f0ea] text-[#10b29f]' : 'bg-white text-gray-400 hover:bg-gray-50'}`}>
+
+                                                        <Check size={18} />
+
+                                                    </button>
+
+                                                    <button type="button" onClick={() => setAttendance(student.id, column.key, false)} className={`w-12 h-full inline-flex items-center justify-center border-l border-[#d8deeb] transition ${status === false ? 'bg-[#ffe0e3] text-[#ef4444]' : 'bg-white text-gray-400 hover:bg-gray-50'}`}>
+
+                                                        <X size={18} />
+
+                                                    </button>
+
+                                                </div>
+
+                                            </div>) : (<div className="flex items-center justify-center gap-1">
+
+                                                <button type="button" onClick={() => {
+                                                    if (status === true) {
+                                                        setAttendance(student.id, column.key, false);
+                                                        return;
+                                                    }
+                                                    setAttendance(student.id, column.key, true);
+                                                }} className={`h-11 min-w-24 px-4 rounded-full text-base font-semibold border inline-flex items-center justify-center gap-2 ${status === true
+                                                    ? 'bg-[#14b8a6] border-[#14b8a6] text-white'
+                                                    : status === false
+                                                        ? 'bg-[#ff384c] border-[#ff384c] text-white'
+                                                        : 'bg-white border-[#d8deeb] text-gray-300'}`}>
+
+                                                    {status === true && <Check size={16} />}
+
+                                                    {status === false && <X size={16} />}
+
+                                                    {status === true ? 'Bor' : status === false ? "Yo'q" : ''}
+
+                                                </button>
+
+
+
+                                                {status !== null && (<button type="button" onClick={() => resetAttendance(column.key, student.id)} disabled={attendanceResetKey === resetKey} className="w-8 h-8 rounded-lg text-gray-400 hover:bg-gray-100 inline-flex items-center justify-center disabled:opacity-60" title="Bitta qator davomatini reset qilish">
+
+                                                    <RefreshCcw size={14} />
+
+                                                </button>)}
+
+                                            </div>)}
+
+                                        </td>);
+                                    })}
+
+                                </tr>))) : (<tr>
+
+                                    <td colSpan={1 + attendanceColumns.length} className="py-16 text-center text-sm text-gray-400 border border-[#eef2f8]">
+
+                                        Guruhda talabalar yo'q
+
+                                    </td>
+
+                                </tr>)}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>)}
+
+
+
+                {activeTab === 'coin' && (<div className="p-4">
+
+                    <div className="flex items-center justify-end gap-1 mb-3">
+
+                        <button type="button" onClick={() => setFocusDate((prev) => addMonths(prev, -1))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
+
+                            <ChevronsLeft size={16} />
+
+                        </button>
+
+                        <button type="button" onClick={() => setFocusDate((prev) => addDays(prev, -7))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
+
+                            <ChevronLeft size={16} />
+
+                        </button>
+
+                        <p className="w-44 text-center text-xl font-semibold text-gray-700 capitalize">{monthLabel}</p>
+
+                        <button type="button" onClick={() => setFocusDate((prev) => addDays(prev, 7))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
+
+                            <ChevronRight size={16} />
+
+                        </button>
+
+                        <button type="button" onClick={() => setFocusDate((prev) => addMonths(prev, 1))} className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 inline-flex items-center justify-center">
+
+                            <ChevronsRight size={16} />
+
+                        </button>
+
+                    </div>
+
+
+
+                    <div className="overflow-x-auto">
+
+                        <table className="w-full min-w-190">
+
+                            <thead>
+
+                                <tr className="border border-[#e9edf5] bg-[#fafbff]">
+
+                                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-500 uppercase border-r border-[#e9edf5]">Nomi</th>
+
+                                    {attendanceColumns.map((column) => (<th key={column.key} className="text-center py-2 px-3 text-sm font-semibold text-gray-600 border-r last:border-r-0 border-[#e9edf5]">
+
+                                        <p>{column.dayLabel}</p>
+
+                                        <p className="text-xl text-gray-700 mt-1">{column.dayNumber}</p>
+
+                                    </th>))}
+
+                                </tr>
+
+                            </thead>
+
+
+
+                            <tbody>
+
+                                {groupStudents.map((student) => (<tr key={`coin-${student.id}`} className="border-b border-x border-[#eef2f8]">
+
+                                    <td className="py-3 px-4 border-r border-[#eef2f8]">
+
+                                        <div className="flex items-center gap-3">
+
+                                            <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-700 inline-flex items-center justify-center font-semibold text-sm">
+
+                                                {String(student.fullName || 'S').charAt(0).toUpperCase()}
+
+                                            </div>
+
+                                            <div>
+
+                                                <p className="text-3xl leading-tight font-medium text-[#27314f]">{student.fullName}</p>
+
+                                                <p className="text-sm text-gray-500">Active</p>
+
+                                            </div>
+
+                                        </div>
+
+                                    </td>
+
+
+
+                                    {attendanceColumns.map((column) => {
+                                        const status = attendanceLookup[column.key]?.get(Number(student.id))?.isPresent;
+                                        const value = status === true ? 10 : status === false ? 0 : '-';
+                                        return (<td key={`coin-${student.id}-${column.key}`} className="py-3 px-3 text-center border-l border-[#eef2f8]">
+
+                                            <span className={`text-2xl ${value === '-' ? 'text-gray-300' : 'text-[#b8bfce]'}`}>{value}</span>
+
+                                        </td>);
+                                    })}
+
+                                </tr>))}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+
+
+                    <div className="mt-4 rounded-xl border border-[#e7ecf6] bg-[#fafbff] px-4 py-3 inline-flex items-center gap-3">
+
+                        <Coins size={17} className="text-violet-500" />
+
+                        <p className="text-sm text-gray-600">Jami coin:</p>
+
+                        <p className="text-lg font-semibold text-gray-800">{coinSummary.earned}</p>
+
+                    </div>
+
+                </div>)}
+
+
+
+                {activeTab === 'history' && (<div className="p-4">
+
+                    <div className="rounded-2xl border border-[#e7ecf6] overflow-hidden">
+
+                        <div className="px-4 py-3 bg-[#fafbff] border-b border-[#e7ecf6] text-sm font-semibold text-gray-700 inline-flex items-center gap-2">
+
+                            <History size={16} className="text-violet-500" /> O'zgarishlar tarixi
+
+                        </div>
+
+
+
+                        <div className="divide-y divide-[#f1f4fa]">
+
+                            {activityHistory.length > 0 ? activityHistory.map((item) => (<div key={item.id} className="px-4 py-3 flex items-start justify-between gap-3">
+
+                                <div>
+
+                                    <p className="text-sm font-medium text-gray-800">{item.text}</p>
+
+                                    <p className="text-xs text-gray-500 mt-1">{formatDateTime(item.date)}</p>
+
+                                </div>
+
+                                <CalendarDays size={16} className="text-gray-300 shrink-0" />
+
+                            </div>)) : (<p className="px-4 py-8 text-sm text-gray-400 text-center">Tarix bo'sh</p>)}
+
+                        </div>
+
+                    </div>
+
+                </div>)}
+
+            </section>
+
+        </div>
+
+
+
+        {showEditModal && (<div className="fixed inset-0 z-50 flex items-center justify-center">
+
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowEditModal(false)} />
+
+
+
+            <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+
+                <div className="flex items-center justify-between mb-5">
+
+                    <h3 className="text-lg font-bold text-gray-900">Guruhni tahrirlash</h3>
+
+                    <button type="button" onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
+
+                        <X size={20} />
+
+                    </button>
+
+                </div>
+
+
+
+                <div className="space-y-4">
+
+                    <Inp label="Guruh nomi" value={form.name} onChange={(value) => setForm({ ...form, name: value })} />
+
+                    <Sel label="O'qituvchi" value={form.teacherId} onChange={(value) => setForm({ ...form, teacherId: value })} options={teachers.map((teacher) => ({ value: String(teacher.id), label: teacher.fullName }))} />
+
+                    <Sel label="Kurs" value={form.courseId} onChange={(value) => setForm({ ...form, courseId: value })} options={courses.map((course) => ({ value: String(course.id), label: course.name }))} />
+
+                    <Sel label="Xona" value={form.roomId} onChange={(value) => setForm({ ...form, roomId: value })} options={rooms.map((room) => ({ value: String(room.id), label: `${room.name} (${room.capacity} o'rin)` }))} />
+
+                    <Inp label="Boshlanish sanasi" value={form.startDate} onChange={(value) => setForm({ ...form, startDate: value })} type="date" />
+
+                    <Inp label="Boshlanish vaqti" value={form.startTime} onChange={(value) => setForm({ ...form, startTime: value })} type="time" />
+
+
+
+                    <div>
+
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Hafta kunlari</label>
+
+                        <div className="flex flex-wrap gap-2">
+
+                            {DAYS.map((day) => (<button key={day} type="button" onClick={() => toggleDay(day)} className={`px-3 py-2 rounded-xl text-xs font-medium transition ${form.weekDays.includes(day) ? 'bg-violet-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+
+                                {DAY_SHORT[day]}
+
+                            </button>))}
+
+                        </div>
+
+                    </div>
+
+
+
+                    <button type="button" disabled={saving} onClick={saveGroup} className="w-full bg-violet-500 text-white py-3 rounded-xl font-semibold hover:bg-violet-600 transition disabled:opacity-70">
+
+                        {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>)}
+
+
+
+        {showStudentModal && (<div className="fixed inset-0 z-50 flex items-center justify-center">
+
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowStudentModal(false)} />
+
+
+
+            <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4">
+
+                <div className="flex items-center justify-between mb-5">
+
+                    <h3 className="text-lg font-bold text-gray-900">Talaba qo'shish</h3>
+
+                    <button type="button" onClick={() => setShowStudentModal(false)} className="text-gray-400 hover:text-gray-600">
+
+                        <X size={20} />
+
+                    </button>
+
+                </div>
+
+
+
+                <Inp label="Talaba qidirish" value={studentSearch} onChange={setStudentSearch} placeholder="Ism yoki email" />
+
+
+
+                <Sel label="Talaba" value={studentId} onChange={setStudentId} options={filteredStudents.map((student) => ({
+                    value: String(student.id),
+                    label: `${student.fullName} (${student.email})`,
+                }))} />
+
+
+
+                {filteredStudents.length === 0 && (<p className="mt-2 text-xs text-gray-400">Qo'shish mumkin bo'lgan talaba topilmadi</p>)}
+
+
+
+                <button type="button" disabled={saving || !studentId} onClick={addStudent} className="w-full mt-4 bg-emerald-500 text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition disabled:opacity-70 inline-flex items-center justify-center gap-2">
+
+                    <UserPlus size={16} />
+
+                    {saving ? "Qo'shilmoqda..." : "Qo'shish"}
+
+                </button>
+
+            </div>
+
+        </div>)}
+
+    </div>);
 }
 function Inp({ label, value, onChange, type = 'text', placeholder }) {
-    return (<div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
-                  <input type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 transition"/>
-            </div>);
+    return (<div>
+
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+
+        <input type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 transition" />
+
+    </div>);
 }
 function Sel({ label, value, onChange, options }) {
-    return (<div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
-                  <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 transition">
-                        <option value="">Tanlang...</option>
-                        {options.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
-                  </select>
-            </div>);
+    return (<div>
+
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+
+        <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 transition">
+
+            <option value="">Tanlang...</option>
+
+            {options.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+
+        </select>
+
+    </div>);
 }
