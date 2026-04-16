@@ -2,12 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { ExternalLink, Loader2, PlayCircle, Search } from 'lucide-react';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
+import { getAttachmentLabel, parseAttachment } from '../utils/attachments.js';
 function parsePayload(response) {
     return response?.data?.data ?? response?.data ?? [];
-}
-function isVideoUrl(value) {
-    const url = String(value || '').toLowerCase();
-    return url.startsWith('http://') || url.startsWith('https://');
 }
 export default function StudentVideosPage() {
     const [videos, setVideos] = useState([]);
@@ -57,7 +54,7 @@ export default function StudentVideosPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 
-            <h1 className="text-[34px] leading-none font-semibold text-gray-900">Qo'shimcha darslar</h1>
+            <h1 className="text-[30px] leading-none font-semibold text-gray-900">Qo'shimcha darslar</h1>
 
 
 
@@ -87,35 +84,39 @@ export default function StudentVideosPage() {
 
         </div>) : filteredVideos.length > 0 ? (<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
 
-            {filteredVideos.map((video) => (<article key={video.id} className="bg-white rounded-2xl border border-[#dce1ea] p-5 shadow-sm">
+            {filteredVideos.map((video) => {
+                const attachment = parseAttachment(video.file);
 
-                <div className="w-11 h-11 rounded-xl bg-[#fff2e4] text-[#be7734] flex items-center justify-center mb-3">
+                return (<article key={video.id} className="bg-white rounded-2xl border border-[#dce1ea] p-5 shadow-sm">
 
-                    <PlayCircle size={20} />
+                    <div className="w-11 h-11 rounded-xl bg-[#fff2e4] text-[#be7734] flex items-center justify-center mb-3">
 
-                </div>
+                        <PlayCircle size={20} />
 
-
-
-                <h3 className="text-base font-semibold text-gray-900 line-clamp-2">{video.lesson?.title || 'Dars videosi'}</h3>
-
-                <p className="text-sm text-gray-500 mt-1">Guruh: {video.lesson?.group?.name || '--'}</p>
-
-                <p className="text-sm text-gray-500">Ustoz: {video.teacher?.fullName || '--'}</p>
-
-                <p className="text-xs text-gray-400 mt-2">{new Date(video.created_at).toLocaleString('uz-UZ')}</p>
+                    </div>
 
 
 
-                {isVideoUrl(video.file) ? (<a href={video.file} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#b76d2e] hover:text-[#9d5c26]">
+                    <h3 className="text-base font-semibold text-gray-900 line-clamp-2">{video.lesson?.title || 'Dars videosi'}</h3>
 
-                    Videoni ochish
+                    <p className="text-sm text-gray-500 mt-1">Guruh: {video.lesson?.group?.name || '--'}</p>
 
-                    <ExternalLink size={14} />
+                    <p className="text-sm text-gray-500">Ustoz: {video.teacher?.fullName || '--'}</p>
 
-                </a>) : (<p className="mt-4 text-sm text-gray-500 break-all">{video.file}</p>)}
+                    <p className="text-xs text-gray-400 mt-2">{new Date(video.created_at).toLocaleString('uz-UZ')}</p>
 
-            </article>))}
+
+
+                    {attachment.link ? (<a href={attachment.link} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#b76d2e] hover:text-[#9d5c26]">
+
+                        Videoni ochish
+
+                        <ExternalLink size={14} />
+
+                    </a>) : (<p className="mt-4 text-sm text-gray-500 break-all">{getAttachmentLabel(video.file)}</p>)}
+
+                </article>);
+            })}
 
         </div>) : (<div className="py-16 text-center text-gray-400">
 

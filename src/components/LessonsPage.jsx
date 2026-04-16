@@ -13,13 +13,13 @@ import {
   Video,
   X,
 } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
 import { getAttachmentLabel, parseAttachment, serializeAttachment } from '../utils/attachments.js';
 
-const INITIAL_LESSON_FORM = { title: '' };
+const INITIAL_LESSON_FORM = { title: '', fileName: '', link: '' };
 const INITIAL_VIDEO_FORM = { lessonId: '', fileName: '', link: '' };
 const INITIAL_HOMEWORK_FORM = {
   lessonId: '',
@@ -73,6 +73,8 @@ function sortByDateAsc(left, right, key = 'created_at') {
 
 export default function LessonsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState('');
@@ -91,7 +93,12 @@ export default function LessonsPage() {
   const [lessonForm, setLessonForm] = useState(INITIAL_LESSON_FORM);
   const [videoForm, setVideoForm] = useState(INITIAL_VIDEO_FORM);
   const [homeworkForm, setHomeworkForm] = useState(INITIAL_HOMEWORK_FORM);
+  const [homeworkSummaryMap, setHomeworkSummaryMap] = useState({});
+  const [loadingHomeworkSummary, setLoadingHomeworkSummary] = useState(false);
+
+  const lessonVideoInputRef = useRef(null);
   const videoInputRef = useRef(null);
+  const homeworkInputRef = useRef(null);
 
   const loadGroups = useCallback(async () => {
     setLoadingGroups(true);
@@ -100,9 +107,14 @@ export default function LessonsPage() {
     try {
       const res = await api.get('/groups/my');
       const list = normalizeList(res.data);
+      const queryGroupId = searchParams.get('groupId');
       setGroups(list);
 
       setSelectedGroupId((prev) => {
+        if (queryGroupId && list.some((group) => String(group.id) === String(queryGroupId))) {
+          return String(queryGroupId);
+        }
+
         if (prev && list.some((group) => String(group.id) === String(prev))) {
           return String(prev);
         }
@@ -115,7 +127,7 @@ export default function LessonsPage() {
     } finally {
       setLoadingGroups(false);
     }
-  }, []);
+  }, [searchParams]);
 
   const loadSelectedGroupDetail = useCallback(async (groupIdValue) => {
     if (!groupIdValue) {
@@ -203,9 +215,127 @@ export default function LessonsPage() {
     return rows;
   }, [lessons]);
 
+  const groupStudentCount = useMemo(() => {
+    const students = Array.isArray(groupDetail?.studentGroup) ? groupDetail.studentGroup : [];
+    return students.filter((item) => item?.student || item?.studentId).length;
+  }, [groupDetail]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (activeTab !== 'homeworks') return undefined;
+
+    if (homeworkRows.length === 0) {
+      setHomeworkSummaryMap({});
+      setLoadingHomeworkSummary(false);
+      return undefined;
+    }
+
+    const loadHomeworkSummary = async () => {
+      setLoadingHomeworkSummary(true);
+
+      try {
+        const results = await Promise.allSettled(
+          homeworkRows.map((homework) => api.get(`/erp/teacher/homeworks/${homework.id}/submissions`)),
+        );
+
+        if (cancelled) return;
+
+        const summaryMap = {};
+
+        results.forEach((result, index) => {
+          const homework = homeworkRows[index];
+          if (!homework) return;
+
+          if (result.status !== 'fulfilled') {
+            summaryMap[homework.id] = {
+              submitted: 0,
+              missing: groupStudentCount,
+            };
+            return;
+          }
+
+          const submissions = normalizeList(result.value.data);
+          const latestByStudent = new Map();
+
+          submissions.forEach((submission) => {
+            const studentId = Number(submission.studentId);
+            if (!studentId) return;
+
+            const previous = latestByStudent.get(studentId);
+            const previousAttempt = Number(previous?.attemptNo || 0);
+            const nextAttempt = Number(submission?.attemptNo || 0);
+
+            if (!previous || nextAttempt > previousAttempt) {
+              latestByStudent.set(studentId, submission);
+            }
+          });
+
+          const submitted = latestByStudent.size;
+          const missing = Math.max(groupStudentCount - submitted, 0);
+
+          summaryMap[homework.id] = {
+            submitted,
+            missing,
+          };
+        });
+
+        setHomeworkSummaryMap(summaryMap);
+      } catch (e) {
+        if (!cancelled) {
+          setHomeworkSummaryMap({});
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingHomeworkSummary(false);
+        }
+      }
+    };
+
+    loadHomeworkSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, homeworkRows, groupStudentCount]);
+
   const selectedGroupName = groupDetail?.name || groups.find((group) => String(group.id) === String(selectedGroupId))?.name || '--';
 
-  const openPrimaryModal = () => {
+  const openTab = useCallback((nextTab) => {
+    setActiveTab(nextTab);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', nextTab);
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (!tabParam) return;
+    if (!['lessons', 'videos', 'homeworks'].includes(tabParam)) return;
+    setActiveTab(tabParam);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const queryGroupId = searchParams.get('groupId');
+    if (!queryGroupId || groups.length === 0) return;
+    if (!groups.some((group) => String(group.id) === String(queryGroupId))) return;
+    if (String(selectedGroupId) === String(queryGroupId)) return;
+
+    setSelectedGroupId(String(queryGroupId));
+  }, [groups, searchParams, selectedGroupId]);
+
+  useEffect(() => {
+    if (!selectedGroupId) return;
+
+    const currentGroupId = searchParams.get('groupId');
+    if (String(currentGroupId) === String(selectedGroupId)) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('groupId', String(selectedGroupId));
+    setSearchParams(nextParams, { replace: true });
+  }, [selectedGroupId, searchParams, setSearchParams]);
+
+  const openPrimaryModal = useCallback(() => {
     if (!selectedGroupId) return;
 
     if (activeTab === 'lessons') {
@@ -217,7 +347,8 @@ export default function LessonsPage() {
     if (activeTab === 'videos') {
       setVideoForm({
         lessonId: lessons[0] ? String(lessons[0].id) : '',
-        file: '',
+        fileName: '',
+        link: '',
       });
       setShowVideoModal(true);
       return;
@@ -228,7 +359,36 @@ export default function LessonsPage() {
       lessonId: lessons[0] ? String(lessons[0].id) : '',
     });
     setShowHomeworkModal(true);
-  };
+  }, [activeTab, lessons, selectedGroupId]);
+
+  useEffect(() => {
+    if (searchParams.get('create') !== '1') return;
+    if (loadingGroups || loadingGroupDetail) return;
+    if (!selectedGroupId) return;
+
+    if (activeTab !== 'lessons' && lessons.length === 0) {
+      setError("Avval kamida bitta dars yarating, keyin video yoki uyga vazifa biriktiring");
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('create');
+      setSearchParams(nextParams, { replace: true });
+      return;
+    }
+
+    openPrimaryModal();
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('create');
+    setSearchParams(nextParams, { replace: true });
+  }, [
+    searchParams,
+    loadingGroups,
+    loadingGroupDetail,
+    selectedGroupId,
+    activeTab,
+    lessons.length,
+    openPrimaryModal,
+    setSearchParams,
+  ]);
 
   const createLesson = async () => {
     if (!selectedGroupId) {
@@ -244,10 +404,25 @@ export default function LessonsPage() {
     setError('');
 
     try {
-      await api.post('/erp/teacher/lessons', {
+      const lessonRes = await api.post('/erp/teacher/lessons', {
         groupId: Number(selectedGroupId),
         title: lessonForm.title.trim(),
       });
+
+      const createdLesson = normalizeObject(lessonRes.data);
+      const optionalAttachment = serializeAttachment({
+        fileName: lessonForm.fileName,
+        link: lessonForm.link,
+      });
+
+      if (optionalAttachment && createdLesson?.id) {
+        await api.post('/erp/teacher/videos', {
+          lessonId: Number(createdLesson.id),
+          file: optionalAttachment,
+        });
+      } else if (optionalAttachment && !createdLesson?.id) {
+        setError("Dars yaratildi, lekin biriktirmani boglash uchun dars ID olinmadi. Videolar bo'limidan biriktiring");
+      }
 
       setShowLessonModal(false);
       setLessonForm(INITIAL_LESSON_FORM);
@@ -264,10 +439,15 @@ export default function LessonsPage() {
       setError('Qaysi darsga video biriktirishni tanlang');
       return;
     }
-    if (!videoForm.file.trim()) {
-      setError("Video URL yoki fayl nomini kiriting");
+    if (!videoForm.fileName.trim() && !videoForm.link.trim()) {
+      setError("Video uchun fayl yoki link kiriting");
       return;
     }
+
+    const attachment = serializeAttachment({
+      fileName: videoForm.fileName,
+      link: videoForm.link,
+    });
 
     setSaving(true);
     setError('');
@@ -275,7 +455,7 @@ export default function LessonsPage() {
     try {
       await api.post('/erp/teacher/videos', {
         lessonId: Number(videoForm.lessonId),
-        file: videoForm.file.trim(),
+        file: attachment,
       });
 
       setShowVideoModal(false);
@@ -308,6 +488,11 @@ export default function LessonsPage() {
       return;
     }
 
+    const attachment = serializeAttachment({
+      fileName: homeworkForm.fileName,
+      link: homeworkForm.link,
+    });
+
     setSaving(true);
     setError('');
 
@@ -315,7 +500,7 @@ export default function LessonsPage() {
       await api.post('/erp/teacher/homeworks', {
         lessonId: Number(homeworkForm.lessonId),
         title: homeworkForm.title.trim(),
-        file: homeworkForm.file.trim() || undefined,
+        file: attachment || undefined,
         durationTime: Number(homeworkForm.durationTime) || 16,
         deadlineAt: deadlineAt.toISOString(),
         maxAttempts: Number(homeworkForm.maxAttempts) || 1,
@@ -332,6 +517,18 @@ export default function LessonsPage() {
     }
   };
 
+  const pickLessonAttachmentFile = () => {
+    lessonVideoInputRef.current?.click();
+  };
+
+  const onLessonAttachmentSelected = (file) => {
+    if (!file) return;
+    setLessonForm((prev) => ({
+      ...prev,
+      fileName: file.name,
+    }));
+  };
+
   const pickVideoFile = () => {
     videoInputRef.current?.click();
   };
@@ -340,7 +537,19 @@ export default function LessonsPage() {
     if (!file) return;
     setVideoForm((prev) => ({
       ...prev,
-      file: file.name,
+      fileName: file.name,
+    }));
+  };
+
+  const pickHomeworkFile = () => {
+    homeworkInputRef.current?.click();
+  };
+
+  const onHomeworkFileSelected = (file) => {
+    if (!file) return;
+    setHomeworkForm((prev) => ({
+      ...prev,
+      fileName: file.name,
     }));
   };
 
@@ -368,7 +577,7 @@ export default function LessonsPage() {
 
       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-gray-900">Guruh darsliklari</h1>
+          <h1 className="text-[30px] leading-none font-semibold text-gray-900">Guruh darsliklari</h1>
           <p className="mt-1 text-sm text-gray-500">Dars, video va uyga vazifalar ketma-ketligi</p>
         </div>
 
@@ -436,21 +645,21 @@ export default function LessonsPage() {
         <div className="px-4 py-3 border-b border-[#e9edf5] flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setActiveTab('lessons')}
+            onClick={() => openTab('lessons')}
             className={`h-9 px-4 rounded-xl text-sm font-semibold ${activeTab === 'lessons' ? 'bg-white border border-[#dfe4ef] text-gray-800' : 'bg-[#f5f7fd] text-gray-500'}`}
           >
             Darslar
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('homeworks')}
+            onClick={() => openTab('homeworks')}
             className={`h-9 px-4 rounded-xl text-sm font-semibold ${activeTab === 'homeworks' ? 'bg-white border border-[#dfe4ef] text-gray-800' : 'bg-[#f5f7fd] text-gray-500'}`}
           >
             Uyga vazifa
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('videos')}
+            onClick={() => openTab('videos')}
             className={`h-9 px-4 rounded-xl text-sm font-semibold ${activeTab === 'videos' ? 'bg-white border border-[#dfe4ef] text-gray-800' : 'bg-[#f5f7fd] text-gray-500'}`}
           >
             Videolar
@@ -487,7 +696,7 @@ export default function LessonsPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            setVideoForm({ lessonId: String(lesson.id), file: '' });
+                            setVideoForm({ lessonId: String(lesson.id), fileName: '', link: '' });
                             setShowVideoModal(true);
                           }}
                           className="h-8 px-3 rounded-lg border border-[#dfe4ef] text-xs font-semibold text-gray-700 hover:bg-gray-50"
@@ -506,30 +715,78 @@ export default function LessonsPage() {
             )}
 
             {activeTab === 'homeworks' && (
-              <table className="w-full min-w-240">
+              <table className="w-full min-w-260">
                 <thead>
                   <tr className="border-b border-[#e9edf5] bg-[#fafbff]">
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">#</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Mavzu</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Dars</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Deadline</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Topshirgan</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Topshirmagan</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Biriktirma</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Urinish</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Late</th>
+                    <th className="py-3 px-4 text-right text-xs font-semibold text-gray-500">Harakat</th>
                   </tr>
                 </thead>
                 <tbody>
+                  {loadingHomeworkSummary && (
+                    <tr>
+                      <td colSpan={9} className="py-3 px-4 text-xs text-gray-500 bg-[#fcfcff]">
+                        Vazifa statuslari yuklanmoqda...
+                      </td>
+                    </tr>
+                  )}
                   {homeworkRows.length > 0 ? homeworkRows.map((homework, index) => (
                     <tr key={homework.id} className="border-b border-[#f1f4fa] last:border-b-0">
                       <td className="py-3 px-4 text-sm text-gray-600">{index + 1}</td>
                       <td className="py-3 px-4 text-sm font-semibold text-gray-900">{homework.title}</td>
                       <td className="py-3 px-4 text-sm text-gray-700">{homework.lessonTitle}</td>
                       <td className="py-3 px-4 text-sm text-gray-700">{formatDateTime(homework.deadlineAt)}</td>
+                      <td className="py-3 px-4 text-sm text-gray-700">
+                        {homeworkSummaryMap[homework.id]?.submitted ?? '--'}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700">
+                        {homeworkSummaryMap[homework.id]?.missing ?? '--'}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700">
+                        {(() => {
+                          const attachment = parseAttachment(homework.file);
+                          if (!attachment.fileName && !attachment.link) return '--';
+
+                          return (
+                            <div className="inline-flex items-center gap-2">
+                              <span>{getAttachmentLabel(homework.file)}</span>
+                              {attachment.link && (
+                                <a
+                                  href={attachment.link}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-violet-600 inline-flex items-center"
+                                  onClick={(event) => event.stopPropagation()}
+                                  title="Biriktirmani ochish"
+                                >
+                                  <ExternalLink size={14} />
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
                       <td className="py-3 px-4 text-sm text-gray-700">{homework.maxAttempts}</td>
-                      <td className="py-3 px-4 text-sm text-gray-700">{homework.allowLateSubmission ? 'Ruxsat' : 'Yoq'}</td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/homeworks?groupId=${selectedGroupId}&homeworkId=${homework.id}`)}
+                          className="h-8 rounded-lg border border-[#dfe4ef] px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        >
+                          Topshiruvlar
+                        </button>
+                      </td>
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-sm text-gray-400">Uyga vazifalar hali biriktirilmagan</td>
+                      <td colSpan={9} className="py-12 text-center text-sm text-gray-400">Uyga vazifalar hali biriktirilmagan</td>
                     </tr>
                   )}
                 </tbody>
@@ -543,25 +800,42 @@ export default function LessonsPage() {
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">#</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Video nomi</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Dars</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Link</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Qoshilgan vaqti</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {videoRows.length > 0 ? videoRows.map((video, index) => (
-                    <tr key={video.id} className="border-b border-[#f1f4fa] last:border-b-0">
-                      <td className="py-3 px-4 text-sm text-gray-600">{index + 1}</td>
-                      <td className="py-3 px-4 text-sm text-gray-800">
-                        <div className="inline-flex items-center gap-2">
-                          <Video size={15} className="text-emerald-500" />
-                          <span className="underline decoration-dotted underline-offset-2">{extractFileName(video.file)}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700">{video.lessonTitle}</td>
-                      <td className="py-3 px-4 text-sm text-gray-700">{formatDateTime(video.created_at)}</td>
-                    </tr>
-                  )) : (
+                  {videoRows.length > 0 ? videoRows.map((video, index) => {
+                    const attachment = parseAttachment(video.file);
+
+                    return (
+                      <tr key={video.id} className="border-b border-[#f1f4fa] last:border-b-0">
+                        <td className="py-3 px-4 text-sm text-gray-600">{index + 1}</td>
+                        <td className="py-3 px-4 text-sm text-gray-800">
+                          <div className="inline-flex items-center gap-2">
+                            <Video size={15} className="text-emerald-500" />
+                            <span className="underline decoration-dotted underline-offset-2">{getAttachmentLabel(video.file)}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700">{video.lessonTitle}</td>
+                        <td className="py-3 px-4 text-sm text-gray-700">
+                          {attachment.link ? (
+                            <a
+                              href={attachment.link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-violet-600 inline-flex items-center gap-1"
+                            >
+                              Ochish <ExternalLink size={14} />
+                            </a>
+                          ) : '--'}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700">{formatDateTime(video.created_at)}</td>
+                      </tr>
+                    );
+                  }) : (
                     <tr>
-                      <td colSpan={4} className="py-12 text-center text-sm text-gray-400">Videolar hali biriktirilmagan</td>
+                      <td colSpan={5} className="py-12 text-center text-sm text-gray-400">Videolar hali biriktirilmagan</td>
                     </tr>
                   )}
                 </tbody>
@@ -574,7 +848,7 @@ export default function LessonsPage() {
       {showLessonModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/45" onClick={() => setShowLessonModal(false)} />
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl mx-4">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Dars yaratish</h3>
               <button type="button" onClick={() => setShowLessonModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -598,10 +872,45 @@ export default function LessonsPage() {
                 <input
                   type="text"
                   value={lessonForm.title}
-                  onChange={(event) => setLessonForm({ title: event.target.value })}
+                  onChange={(event) => setLessonForm((prev) => ({ ...prev, title: event.target.value }))}
                   placeholder="Masalan: React Router amaliyoti"
                   className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
                 />
+              </div>
+
+              <div className="rounded-xl border border-[#e5ebf6] bg-[#f9fbff] p-3">
+                <p className="text-sm font-semibold text-gray-800">Ixtiyoriy biriktirma</p>
+                <p className="text-xs text-gray-500 mt-0.5">Dars yaratilgandan keyin shu fayl/link avtomatik biriktiriladi</p>
+
+                <div className="mt-3 space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={pickLessonAttachmentFile}
+                      className="h-10 rounded-xl border border-[#dfe4ef] bg-white px-3 text-sm font-semibold text-gray-700"
+                    >
+                      Video/Fayl tanlash
+                    </button>
+                    <input
+                      ref={lessonVideoInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={(event) => onLessonAttachmentSelected(event.target.files?.[0])}
+                    />
+                    <span className="text-xs text-gray-500">{lessonForm.fileName || 'Tanlanmagan'}</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Link (ixtiyoriy)</label>
+                    <input
+                      type="text"
+                      value={lessonForm.link}
+                      onChange={(event) => setLessonForm((prev) => ({ ...prev, link: event.target.value }))}
+                      placeholder="https://cdn.example.com/lesson-resource"
+                      className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                    />
+                  </div>
+                </div>
               </div>
 
               <button
@@ -610,7 +919,7 @@ export default function LessonsPage() {
                 onClick={createLesson}
                 className="h-11 w-full rounded-xl bg-violet-500 text-sm font-semibold text-white hover:bg-violet-600 disabled:opacity-70"
               >
-                {saving ? 'Saqlanmoqda...' : 'Yaratish'}
+                {saving ? 'Saqlanmoqda...' : 'Yaratish va davom etish'}
               </button>
             </div>
           </div>
@@ -657,7 +966,7 @@ export default function LessonsPage() {
               >
                 <UploadCloud size={32} className="mx-auto text-emerald-500" />
                 <p className="mt-2 text-base font-medium text-gray-700">Videofaylni shu yerga tashlang yoki tanlang</p>
-                <p className="mt-1 text-sm text-gray-500">Agar backendda upload yoq bo`lsa, fayl nomi saqlanadi</p>
+                <p className="mt-1 text-sm text-gray-500">Upload bo'lmasa fayl nomi saqlanadi, link bo'lsa alohida biriktiriladi</p>
                 <input
                   ref={videoInputRef}
                   type="file"
@@ -667,14 +976,20 @@ export default function LessonsPage() {
                 />
               </button>
 
+              {videoForm.fileName && (
+                <div className="rounded-xl border border-[#e1e7f2] bg-[#f8fafe] px-3 py-2 text-sm text-gray-700">
+                  Tanlangan fayl: <span className="font-medium">{videoForm.fileName}</span>
+                </div>
+              )}
+
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Video URL yoki fayl nomi</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Video link (ixtiyoriy)</label>
                 <div className="relative">
                   <Link2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    value={videoForm.file}
-                    onChange={(event) => setVideoForm((prev) => ({ ...prev, file: event.target.value }))}
+                    value={videoForm.link}
+                    onChange={(event) => setVideoForm((prev) => ({ ...prev, link: event.target.value }))}
                     placeholder="https://cdn.example.com/lesson.mp4"
                     className="h-11 w-full rounded-xl border border-[#dfe4ef] pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
                   />
@@ -780,11 +1095,31 @@ export default function LessonsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Fayl URL (ixtiyoriy)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Fayl (ixtiyoriy)</label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={pickHomeworkFile}
+                    className="h-10 rounded-xl border border-[#dfe4ef] bg-white px-3 text-sm font-semibold text-gray-700"
+                  >
+                    Fayl tanlash
+                  </button>
+                  <input
+                    ref={homeworkInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={(event) => onHomeworkFileSelected(event.target.files?.[0])}
+                  />
+                  <span className="text-xs text-gray-500">{homeworkForm.fileName || 'Tanlanmagan'}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Resurs link (ixtiyoriy)</label>
                 <input
                   type="text"
-                  value={homeworkForm.file}
-                  onChange={(event) => setHomeworkForm((prev) => ({ ...prev, file: event.target.value }))}
+                  value={homeworkForm.link}
+                  onChange={(event) => setHomeworkForm((prev) => ({ ...prev, link: event.target.value }))}
                   placeholder="https://cdn.example.com/homework.pdf"
                   className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
                 />

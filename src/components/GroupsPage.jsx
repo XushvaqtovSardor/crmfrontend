@@ -330,7 +330,7 @@ export default function GroupsPage() {
     <div>
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between mb-5 gap-4">
         <div>
-          <h1 className="text-4xl leading-none font-semibold text-gray-900">Guruhlar</h1>
+          <h1 className="text-[32px] leading-none font-semibold text-gray-900">Guruhlar</h1>
           <p className="mt-2 text-sm text-gray-500">Aktiv guruhlarni boshqaring va arxivni nazorat qiling</p>
         </div>
         <button
@@ -371,7 +371,7 @@ export default function GroupsPage() {
             <MoreHorizontal size={16} className="text-gray-400" />
           </div>
           <p className="text-gray-500 text-sm">Jami guruhlar</p>
-          <p className="text-5xl font-bold text-gray-900 mt-2">{groups.length}</p>
+          <p className="text-4xl font-bold text-gray-900 mt-2">{groups.length}</p>
         </div>
         <div className="bg-white rounded-2xl border border-[#e3e7f1] p-5">
           <div className="mb-3 flex items-center justify-between">
@@ -379,7 +379,7 @@ export default function GroupsPage() {
             <MoreHorizontal size={16} className="text-gray-400" />
           </div>
           <p className="text-gray-500 text-sm">O'qituvchilar</p>
-          <p className="text-5xl font-bold text-gray-900 mt-2">{teachers.length}</p>
+          <p className="text-4xl font-bold text-gray-900 mt-2">{teachers.length}</p>
         </div>
         <div className="bg-white rounded-2xl border border-[#e3e7f1] p-5">
           <div className="mb-3 flex items-center justify-between">
@@ -387,7 +387,7 @@ export default function GroupsPage() {
             <MoreHorizontal size={16} className="text-gray-400" />
           </div>
           <p className="text-gray-500 text-sm">O'quvchilar</p>
-          <p className="text-5xl font-bold text-gray-900 mt-2">{studentsCount}</p>
+          <p className="text-4xl font-bold text-gray-900 mt-2">{studentsCount}</p>
         </div>
       </div>
 

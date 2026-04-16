@@ -122,6 +122,30 @@ export default function MyGroupsPage() {
                                         <span>{getGroupStudentCount(group)} ta talaba</span>
                                     </div>
                                 </div>
+
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate(`/lessons?groupId=${group.id}&tab=lessons`)}
+                                        className="h-9 rounded-lg border border-[#dce1ea] bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                    >
+                                        Guruhga kirish
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate(`/lessons?groupId=${group.id}&tab=lessons&create=1`)}
+                                        className="h-9 rounded-lg bg-violet-500 px-3 text-xs font-semibold text-white hover:bg-violet-600"
+                                    >
+                                        Dars qo'shish
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate(`/homeworks?groupId=${group.id}`)}
+                                        className="h-9 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-600"
+                                    >
+                                        Vazifa holati
+                                    </button>
+                                </div>
                             </article>
                         ))}
                     </div>

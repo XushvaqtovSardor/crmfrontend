@@ -130,7 +130,7 @@ function StatCard({ title, value, icon: Icon }) {
                 <Icon size={28} strokeWidth={1.8} />
             </div>
             <p className="text-center text-[15px] text-slate-800">{title}</p>
-            <p className="mt-3 text-center text-4xl font-semibold text-slate-900">{value}</p>
+            <p className="mt-3 text-center text-3xl font-semibold text-slate-900">{value}</p>
         </div>
     );
 }
@@ -143,7 +143,7 @@ function AccordionBlock({ title, open, onToggle, children }) {
                 onClick={onToggle}
                 className="w-full flex items-center justify-between px-6 py-5 text-left"
             >
-                <h3 className="text-[35px] leading-none font-semibold text-slate-900">{title}</h3>
+                <h3 className="text-2xl leading-none font-semibold text-slate-900">{title}</h3>
                 <ChevronDown className={cn('text-slate-500 transition-transform', open && 'rotate-180')} />
             </button>
             {open && <div className="px-6 pb-6">{children}</div>}
@@ -291,7 +291,7 @@ function ProfitSection({ values, year, yearOptions, onYearChange, paidAmount, de
                     ))}
                 </div>
 
-                <div className="hidden lg:block absolute left-[200px] top-[88px] w-[260px] rounded-3xl border border-slate-100 bg-white/95 p-5 shadow-xl">
+                <div className="hidden lg:block absolute left-50 top-22 w-65 rounded-3xl border border-slate-100 bg-white/95 p-5 shadow-xl">
                     <p className="mb-4 text-[26px] font-semibold text-slate-900">{highlightedMonth} {year}</p>
                     <div className="mb-3 border-t border-slate-100 pt-4 text-[18px]">
                         <span className="text-slate-500">To'langan summa </span>
@@ -317,7 +317,7 @@ function ScheduleSection({ scheduleRows, scheduleFilter, setScheduleFilter, sche
                         <div className="text-4xl font-semibold text-violet-600">{scheduleDateCard.day}</div>
                     </div>
                     <div>
-                        <div className="text-[28px] font-semibold capitalize text-slate-900">{scheduleDateCard.monthYear}</div>
+                        <div className="text-2xl font-semibold capitalize text-slate-900">{scheduleDateCard.monthYear}</div>
                         <div className="text-slate-500">{scheduleDateCard.weekDay}</div>
                     </div>
                 </div>
@@ -369,7 +369,7 @@ function ScheduleSection({ scheduleRows, scheduleFilter, setScheduleFilter, sche
             <div className="space-y-0">
                 {scheduleRows.length > 0 ? (
                     scheduleRows.map((row) => (
-                        <div key={row.roomName} className="grid min-h-[72px] grid-cols-[70px_1fr] border-b border-slate-200">
+                        <div key={row.roomName} className="grid min-h-18 grid-cols-[70px_1fr] border-b border-slate-200">
                             <div className="flex items-center text-[18px] text-slate-700">{row.roomName}</div>
                             <div className="flex flex-wrap items-center gap-3 py-2">
                                 {row.groups.map((group) => (
@@ -571,22 +571,22 @@ export default function AdminDashboard() {
         return (
             <div className="space-y-5">
                 <div>
-                    <h1 className="text-3xl font-semibold text-slate-900 md:text-5xl">Salom, {user?.fullName || 'Foydalanuvchi'}!</h1>
-                    <p className="mt-2 text-xl text-slate-600">EduCoin platformasiga xush kelibsiz!</p>
+                    <h1 className="text-3xl font-semibold text-slate-900 md:text-4xl">Salom, {user?.fullName || 'Foydalanuvchi'}!</h1>
+                    <p className="mt-2 text-base text-slate-600">EduCoin platformasiga xush kelibsiz!</p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
                     {[...Array(6)].map((_, idx) => (
-                        <div key={idx} className="h-[170px] rounded-3xl border border-slate-200 bg-white animate-pulse" />
+                        <div key={idx} className="h-42.5 rounded-3xl border border-slate-200 bg-white animate-pulse" />
                     ))}
                 </div>
 
                 <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-                    <div className="h-[120px] rounded-2xl border border-slate-200 bg-white animate-pulse" />
-                    <div className="h-[120px] rounded-2xl border border-slate-200 bg-white animate-pulse" />
+                    <div className="h-30 rounded-2xl border border-slate-200 bg-white animate-pulse" />
+                    <div className="h-30 rounded-2xl border border-slate-200 bg-white animate-pulse" />
                 </div>
 
-                <div className="h-[120px] rounded-2xl border border-slate-200 bg-white animate-pulse" />
+                <div className="h-30 rounded-2xl border border-slate-200 bg-white animate-pulse" />
             </div>
         );
     }
@@ -594,8 +594,8 @@ export default function AdminDashboard() {
     return (
         <div className="space-y-4">
             <div>
-                <h1 className="text-3xl font-semibold text-slate-950 md:text-5xl">Salom, {user?.fullName || 'Foydalanuvchi'}!</h1>
-                <p className="mt-2 text-xl text-slate-600">EduCoin platformasiga xush kelibsiz!</p>
+                <h1 className="text-3xl font-semibold text-slate-950 md:text-4xl">Salom, {user?.fullName || 'Foydalanuvchi'}!</h1>
+                <p className="mt-2 text-base text-slate-600">EduCoin platformasiga xush kelibsiz!</p>
             </div>
 
             {error && (

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Paperclip, Play, SendHorizontal } from 'lucide-react';
+import { ExternalLink, Loader2, Paperclip, Play, SendHorizontal } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
+import { getAttachmentLabel, parseAttachment, serializeAttachment } from '../utils/attachments.js';
 
 function formatDate(value) {
     if (!value) return '--';
@@ -32,6 +33,7 @@ export default function StudentLessonDetailsPage() {
 
     const [message, setMessage] = useState('');
     const [attachment, setAttachment] = useState('');
+    const [attachmentLink, setAttachmentLink] = useState('');
 
     const loadData = async () => {
         if (!groupId || !lessonId) return;
@@ -89,6 +91,11 @@ export default function StudentLessonDetailsPage() {
     const handleSubmitHomework = async () => {
         if (!homework || submitting) return;
 
+        const packedAttachment = serializeAttachment({
+            fileName: attachment,
+            link: attachmentLink,
+        });
+
         setSubmitting(true);
         setError('');
 
@@ -96,11 +103,12 @@ export default function StudentLessonDetailsPage() {
             await api.post('/erp/student/submissions', {
                 homeworkId: homework.id,
                 title: message.trim() || homework.title || `Homework ${homework.id}`,
-                file: attachment || undefined,
+                file: packedAttachment || undefined,
             });
 
             setMessage('');
             setAttachment('');
+            setAttachmentLink('');
             await loadData();
         } catch (e) {
             setError(getApiErrorMessage(e, "Uyga vazifani yuborib bo'lmadi"));
@@ -134,19 +142,33 @@ export default function StudentLessonDetailsPage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {(Array.isArray(lesson.lessonVideos) ? lesson.lessonVideos : []).map((video, index) => (
-                                <article key={video.id} className="rounded-2xl border border-[#dce1ea] bg-white overflow-hidden">
-                                    <div className="h-44 bg-linear-to-br from-[#dbe4ff] via-[#eff3ff] to-[#f7f9ff] flex items-center justify-center">
-                                        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-[#6d7ba7]">
-                                            <Play size={20} />
-                                        </span>
-                                    </div>
-                                    <div className="px-4 py-3">
-                                        <p className="text-sm font-semibold text-gray-800 line-clamp-1">{video.title || `Video ${index + 1}`}</p>
-                                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">{video.file || 'Video fayl'}</p>
-                                    </div>
-                                </article>
-                            ))}
+                            {(Array.isArray(lesson.lessonVideos) ? lesson.lessonVideos : []).map((video, index) => {
+                                const attachmentInfo = parseAttachment(video.file);
+
+                                return (
+                                    <article key={video.id} className="rounded-2xl border border-[#dce1ea] bg-white overflow-hidden">
+                                        <div className="h-44 bg-linear-to-br from-[#dbe4ff] via-[#eff3ff] to-[#f7f9ff] flex items-center justify-center">
+                                            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-[#6d7ba7]">
+                                                <Play size={20} />
+                                            </span>
+                                        </div>
+                                        <div className="px-4 py-3">
+                                            <p className="text-sm font-semibold text-gray-800 line-clamp-1">{video.title || `Video ${index + 1}`}</p>
+                                            <p className="text-xs text-gray-500 mt-1 line-clamp-1">{getAttachmentLabel(video.file)}</p>
+                                            {attachmentInfo.link && (
+                                                <a
+                                                    href={attachmentInfo.link}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#a65f23]"
+                                                >
+                                                    Videoni ochish <ExternalLink size={13} />
+                                                </a>
+                                            )}
+                                        </div>
+                                    </article>
+                                );
+                            })}
                         </div>
 
                         {!Array.isArray(lesson.lessonVideos) || lesson.lessonVideos.length === 0 ? (
@@ -166,6 +188,21 @@ export default function StudentLessonDetailsPage() {
                                         <div>
                                             <p className="text-sm font-semibold text-gray-800">{homework.title || `Homework ${homework.id}`}</p>
                                             <p className="text-xs text-gray-500 mt-1">Deadline: {formatDate(homework.deadlineAt)}</p>
+                                            {(() => {
+                                                const attachmentInfo = parseAttachment(homework.file);
+                                                if (!attachmentInfo.fileName && !attachmentInfo.link) return null;
+
+                                                return (
+                                                    <div className="mt-1 inline-flex items-center gap-2 text-xs text-gray-600">
+                                                        <span>{getAttachmentLabel(homework.file)}</span>
+                                                        {attachmentInfo.link && (
+                                                            <a href={attachmentInfo.link} target="_blank" rel="noreferrer" className="text-[#a86429] inline-flex items-center">
+                                                                <ExternalLink size={13} />
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                         {homeworkState?.submitted ? (
                                             <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Topshirilgan</span>
@@ -201,6 +238,16 @@ export default function StudentLessonDetailsPage() {
                                             />
                                             {attachment && <span className="text-xs text-gray-500">{attachment}</span>}
                                         </div>
+
+                                        <label className="min-w-56 rounded-lg border border-[#dce1ea] bg-white px-3 py-1.5">
+                                            <input
+                                                type="text"
+                                                value={attachmentLink}
+                                                onChange={(event) => setAttachmentLink(event.target.value)}
+                                                placeholder="Ish linki (ixtiyoriy)"
+                                                className="w-full bg-transparent text-sm text-gray-700 outline-none"
+                                            />
+                                        </label>
 
                                         <button
                                             type="button"
