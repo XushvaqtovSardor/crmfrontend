@@ -399,7 +399,7 @@ export default function GroupsPage() {
 
       <div className="bg-white rounded-2xl border border-[#e3e7f1] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-295">
+          <table className="w-full min-w-295 ">
             <thead>
               <tr className="border-b border-[#e9edf5] bg-[#fafbff]">
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500">Status</th>
@@ -415,7 +415,7 @@ export default function GroupsPage() {
                   <button
                     type="button"
                     onClick={loadAll}
-                    className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#dfe4ef] bg-white text-gray-500 hover:text-gray-700"
+                    className="ml-auto inline-flex h-32 w-8 items-center justify-center rounded-lg border border-[#dfe4ef] bg-white text-gray-500 hover:text-gray-700"
                     title="Yangilash"
                   >
                     <RefreshCcw size={14} />

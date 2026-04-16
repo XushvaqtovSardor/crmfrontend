@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
   CalendarDays,
+  ExternalLink,
   FileVideo2,
   GraduationCap,
   Link2,
@@ -12,16 +13,19 @@ import {
   Video,
   X,
 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
+import { getAttachmentLabel, parseAttachment, serializeAttachment } from '../utils/attachments.js';
 
 const INITIAL_LESSON_FORM = { title: '' };
-const INITIAL_VIDEO_FORM = { lessonId: '', file: '' };
+const INITIAL_VIDEO_FORM = { lessonId: '', fileName: '', link: '' };
 const INITIAL_HOMEWORK_FORM = {
   lessonId: '',
   title: '',
-  file: '',
+  fileName: '',
+  link: '',
   durationTime: '16',
   deadlineAt: '',
   maxAttempts: '1',
@@ -59,20 +63,6 @@ function formatDateTime(value) {
     hour: '2-digit',
     minute: '2-digit',
   });
-}
-
-function extractFileName(value) {
-  const text = String(value || '').trim();
-  if (!text) return '--';
-
-  try {
-    const url = new URL(text);
-    const last = url.pathname.split('/').filter(Boolean).at(-1);
-    return last || text;
-  } catch {
-    const last = text.split('/').filter(Boolean).at(-1);
-    return last || text;
-  }
 }
 
 function sortByDateAsc(left, right, key = 'created_at') {
