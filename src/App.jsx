@@ -117,7 +117,7 @@ function App() {
             } />
             <Route path="/courses" element={
               <AuthenticatedLayout allowedRoles={STAFF_ALLOWED_ROLES}>
-                <CoursesPage />
+                <Navigate to="/management/courses" replace />
               </AuthenticatedLayout>
             } />
             <Route path="/gifts" element={

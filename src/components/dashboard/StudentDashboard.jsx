@@ -66,6 +66,40 @@ function sameDate(a, b) {
     return toDateKey(a) === toDateKey(b);
 }
 
+const WEEKDAY_CODES = new Set(Object.keys(WEEKDAY_INDEX));
+
+function normalizeWeekDays(input) {
+    let rawValues = [];
+
+    if (Array.isArray(input)) {
+        rawValues = input.flatMap((item) => {
+            if (typeof item === 'string') return [item];
+            if (item && typeof item === 'object') {
+                if (typeof item.day === 'string') return [item.day];
+                if (typeof item.value === 'string') return [item.value];
+            }
+            return [];
+        });
+    } else if (typeof input === 'string') {
+        const text = input.trim();
+        if (!text) return [];
+
+        if (text.startsWith('[') && text.endsWith(']')) {
+            try {
+                return normalizeWeekDays(JSON.parse(text));
+            } catch {
+                // Continue with comma-split fallback.
+            }
+        }
+
+        rawValues = text.split(',');
+    }
+
+    return [...new Set(rawValues
+        .map((value) => String(value || '').trim().toUpperCase())
+        .filter((value) => WEEKDAY_CODES.has(value)))];
+}
+
 export default function StudentDashboard() {
     const { user } = useAuth();
 
@@ -123,7 +157,31 @@ export default function StudentDashboard() {
 
     const calendarCells = useMemo(() => buildCalendarCells(calendarMonth), [calendarMonth]);
 
-    const eventsByDate = useMemo(() => {
+    const lessonGroups = useMemo(() => {
+        return groups
+            .filter((group) => String(group?.status || '').toUpperCase() === 'ACTIVE')
+            .map((group) => {
+                const weekDays = normalizeWeekDays(group?.weekDays);
+
+                const parsedStartDate = new Date(group?.startDate || '');
+                const startDateOnly = Number.isNaN(parsedStartDate.getTime())
+                    ? null
+                    : new Date(
+                        parsedStartDate.getFullYear(),
+                        parsedStartDate.getMonth(),
+                        parsedStartDate.getDate(),
+                    );
+
+                return {
+                    ...group,
+                    normalizedWeekDays: weekDays,
+                    startDateOnly,
+                };
+            })
+            .filter((group) => group.normalizedWeekDays.length > 0);
+    }, [groups]);
+
+    const lessonEventsByDate = useMemo(() => {
         const map = new Map();
 
         const putEvent = (dateKey, event) => {
@@ -136,15 +194,20 @@ export default function StudentDashboard() {
         const calendarRangeEnd = new Date(calendarCells[calendarCells.length - 1] || new Date());
 
         for (let date = new Date(calendarRangeStart); date <= calendarRangeEnd; date.setDate(date.getDate() + 1)) {
-            const weekday = date.getDay();
+            const currentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const weekday = currentDate.getDay();
 
-            groups.forEach((group) => {
-                const weekDays = Array.isArray(group?.weekDays) ? group.weekDays : [];
-                const matches = weekDays.some((day) => WEEKDAY_INDEX[day] === weekday);
+            lessonGroups.forEach((group) => {
+                if (group.startDateOnly && currentDate < group.startDateOnly) {
+                    return;
+                }
+
+                const matches = group.normalizedWeekDays.some((day) => WEEKDAY_INDEX[day] === weekday);
                 if (!matches) return;
 
-                putEvent(toDateKey(date), {
-                    id: `group-${group.id}-${toDateKey(date)}`,
+                const dateKey = toDateKey(currentDate);
+                putEvent(dateKey, {
+                    id: `group-${group.id}-${dateKey}`,
                     type: 'lesson',
                     title: group?.name || `Guruh ${group.id}`,
                     subtitle: group?.course?.name || "Asosiy dars",
@@ -153,22 +216,10 @@ export default function StudentDashboard() {
             });
         }
 
-        homeworks.forEach((hw) => {
-            if (!hw?.deadlineAt || hw?.submitted) return;
-            const dateKey = toDateKey(hw.deadlineAt);
-            putEvent(dateKey, {
-                id: `hw-${hw.id}`,
-                type: 'homework',
-                title: hw.title || `Homework ${hw.id}`,
-                subtitle: 'Uyga vazifa muddati',
-                time: new Date(hw.deadlineAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }),
-            });
-        });
-
         return map;
-    }, [calendarCells, groups, homeworks]);
+    }, [calendarCells, lessonGroups]);
 
-    const selectedEvents = eventsByDate.get(selectedDate) || [];
+    const selectedEvents = lessonEventsByDate.get(selectedDate) || [];
 
     const averageScore = Number(progress?.averageScore) || 0;
     const pendingHomeworkCount = homeworks.filter((hw) => !hw.submitted).length;
@@ -177,16 +228,16 @@ export default function StudentDashboard() {
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-emerald-900/35 bg-linear-to-r from-[#0f1713] via-[#16231b] to-[#242012] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[#dce1ea] bg-white p-5">
                 <div>
-                    <h1 className="text-[36px] leading-none font-semibold text-white">Bosh sahifa</h1>
-                    <p className="mt-1 text-sm text-slate-300">Salom, {user?.fullName || 'Student'}!</p>
+                    <h1 className="text-[36px] leading-none font-semibold text-gray-900">Bosh sahifa</h1>
+                    <p className="mt-1 text-sm text-gray-500">Salom, {user?.fullName || 'Student'}!</p>
                 </div>
 
                 <button
                     type="button"
                     onClick={loadData}
-                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-emerald-800/40 bg-[#111913] px-4 text-sm font-semibold text-slate-200 hover:bg-[#18231c]"
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#d6dbe4] bg-white px-4 text-sm font-semibold text-gray-700"
                 >
                     <RefreshCcw size={15} /> Yangilash
                 </button>
@@ -198,28 +249,28 @@ export default function StudentDashboard() {
                 </div>
             )}
 
-            <section className="rounded-2xl border border-emerald-900/35 bg-[#101713] p-5">
+            <section className="rounded-2xl border border-[#dce1ea] bg-white p-5">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div>
-                        <p className="text-sm text-slate-300">Kumushlar</p>
-                        <h2 className="inline-flex items-center gap-2 text-3xl font-semibold text-amber-300">
+                        <p className="text-sm text-gray-500">Kumushlar</p>
+                        <h2 className="inline-flex items-center gap-2 text-3xl font-semibold text-[#af6828]">
                             <CircleDollarSign size={24} />
                             {coins}
                         </h2>
                     </div>
 
                     <div className="text-right">
-                        <p className="text-sm text-slate-300">Level {levelState.level}</p>
-                        <p className="text-base font-semibold text-white">XP {xp}</p>
+                        <p className="text-sm text-gray-500">Level {levelState.level}</p>
+                        <p className="text-base font-semibold text-gray-900">XP {xp}</p>
                     </div>
                 </div>
 
                 <div className="mt-4">
-                    <div className="mb-1.5 flex items-center justify-between text-xs text-slate-400">
+                    <div className="mb-1.5 flex items-center justify-between text-xs text-gray-500">
                         <span>Level progress</span>
                         <span>{levelState.inLevel} / 500 XP</span>
                     </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-[#1f2a23]">
+                    <div className="h-3 overflow-hidden rounded-full bg-[#ebeef5]">
                         <div className="h-full rounded-full bg-linear-to-r from-emerald-500 to-amber-400" style={{ width: `${levelState.progressPercent}%` }} />
                     </div>
                 </div>
@@ -247,9 +298,9 @@ export default function StudentDashboard() {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-4">
-                <section className="space-y-4 rounded-2xl border border-emerald-900/35 bg-[#101713] p-4">
+                <section className="space-y-4 rounded-2xl border border-[#dce1ea] bg-white p-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="inline-flex items-center gap-2 text-base font-semibold text-slate-100">
+                        <h3 className="inline-flex items-center gap-2 text-base font-semibold text-gray-800">
                             <CalendarDays size={16} className="text-amber-300" />
                             Dars jadvali
                         </h3>
@@ -258,15 +309,15 @@ export default function StudentDashboard() {
                             <button
                                 type="button"
                                 onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-900/35 bg-[#141f19] text-slate-300"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#dce1ea] bg-white text-gray-600"
                             >
                                 <ChevronLeft size={15} />
                             </button>
-                            <span className="min-w-40 text-center text-sm font-medium text-slate-200">{monthLabel(calendarMonth)}</span>
+                            <span className="min-w-40 text-center text-sm font-medium text-gray-700">{monthLabel(calendarMonth)}</span>
                             <button
                                 type="button"
                                 onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-900/35 bg-[#141f19] text-slate-300"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#dce1ea] bg-white text-gray-600"
                             >
                                 <ChevronRight size={15} />
                             </button>
@@ -279,7 +330,7 @@ export default function StudentDashboard() {
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-500">
+                            <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-400">
                                 {['Ya', 'Du', 'Se', 'Cho', 'Pa', 'Ju', 'Sha'].map((day) => (
                                     <div key={day} className="py-1">{day}</div>
                                 ))}
@@ -291,7 +342,7 @@ export default function StudentDashboard() {
                                     const isToday = sameDate(dateValue, new Date());
                                     const isCurrentMonth = dateValue.getMonth() === calendarMonth.getMonth();
                                     const isSelected = selectedDate === dateKey;
-                                    const hasEvent = (eventsByDate.get(dateKey) || []).length > 0;
+                                    const hasEvent = (lessonEventsByDate.get(dateKey) || []).length > 0;
 
                                     return (
                                         <button
@@ -299,10 +350,10 @@ export default function StudentDashboard() {
                                             type="button"
                                             onClick={() => setSelectedDate(dateKey)}
                                             className={`h-10 rounded-lg border text-sm ${isSelected
-                                                ? 'border-amber-400/60 bg-[#2a1f12] text-amber-300'
+                                                ? 'border-[#d48a42] bg-[#fff3e6] text-[#b0692a]'
                                                 : isCurrentMonth
-                                                    ? 'border-emerald-900/30 bg-[#121b16] text-slate-200'
-                                                    : 'border-emerald-900/20 bg-[#0f1512] text-slate-600'} ${isToday ? 'font-semibold' : ''}`}
+                                                    ? 'border-[#eceff6] bg-white text-gray-700'
+                                                    : 'border-[#f2f4f8] bg-[#fafbfd] text-gray-400'} ${isToday ? 'font-semibold' : ''}`}
                                         >
                                             <span className="inline-flex items-center gap-1">
                                                 {dateValue.getDate()}
@@ -316,22 +367,22 @@ export default function StudentDashboard() {
                     )}
                 </section>
 
-                <section className="rounded-2xl border border-emerald-900/35 bg-[#101713] p-4">
-                    <h3 className="text-base font-semibold text-slate-100">Tanlangan kundagi darslar</h3>
-                    <p className="mt-1 text-xs text-slate-400">{selectedDate}</p>
+                <section className="rounded-2xl border border-[#dce1ea] bg-white p-4">
+                    <h3 className="text-base font-semibold text-gray-800">Tanlangan kundagi darslar</h3>
+                    <p className="mt-1 text-xs text-gray-500">{selectedDate}</p>
 
                     <div className="mt-3 space-y-2 max-h-105 overflow-auto pr-1">
                         {selectedEvents.length > 0 ? selectedEvents.map((event) => (
                             <article
                                 key={event.id}
-                                className={`rounded-xl border px-3 py-2 ${event.type === 'homework' ? 'border-amber-400/25 bg-[#241d12]' : 'border-emerald-500/25 bg-[#15211a]'}`}
+                                className="rounded-xl border border-[#dbe9d8] bg-[#f1faf0] px-3 py-2"
                             >
-                                <p className="text-sm font-semibold text-slate-100">{event.title}</p>
-                                <p className="mt-0.5 text-xs text-slate-400">{event.subtitle}</p>
-                                <p className="mt-1 text-xs font-medium text-slate-200">{event.time}</p>
+                                <p className="text-sm font-semibold text-gray-800">{event.title}</p>
+                                <p className="mt-0.5 text-xs text-gray-500">{event.subtitle}</p>
+                                <p className="mt-1 text-xs font-medium text-gray-700">{event.time}</p>
                             </article>
                         )) : (
-                            <div className="rounded-xl border border-dashed border-emerald-900/30 bg-[#0f1512] py-8 text-center text-sm text-slate-400">
+                            <div className="rounded-xl border border-dashed border-[#dce1ea] bg-[#fafbfd] py-8 text-center text-sm text-gray-500">
                                 Bu kunda reja yo'q
                             </div>
                         )}
@@ -344,13 +395,13 @@ export default function StudentDashboard() {
 
 function InfoCard({ icon, title, value, subtitle }) {
     return (
-        <article className="rounded-2xl border border-emerald-900/35 bg-linear-to-br from-[#101713] via-[#15211a] to-[#241f12] p-4 transition hover:-translate-y-0.5">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-amber-400/30 bg-amber-500/15 text-amber-300">
+        <article className="rounded-2xl border border-[#dce1ea] bg-white p-4 transition hover:-translate-y-0.5">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#fff3e6] text-[#c07937]">
                 {icon}
             </span>
-            <p className="mt-3 text-xs text-slate-400">{title}</p>
-            <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
-            <p className="mt-1 text-xs text-slate-400">{subtitle}</p>
+            <p className="mt-3 text-xs text-gray-500">{title}</p>
+            <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
+            <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
         </article>
     );
 }
