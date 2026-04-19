@@ -19,7 +19,7 @@ import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
 import { getAttachmentLabel, parseAttachment, serializeAttachment } from '../utils/attachments.js';
 
-const INITIAL_LESSON_FORM = { title: '', fileName: '', link: '' };
+const INITIAL_LESSON_FORM = { title: '' };
 const INITIAL_VIDEO_FORM = { lessonId: '', fileName: '', link: '' };
 const INITIAL_HOMEWORK_FORM = {
   lessonId: '',
@@ -82,6 +82,7 @@ export default function LessonsPage() {
 
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [loadingGroupDetail, setLoadingGroupDetail] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -96,7 +97,6 @@ export default function LessonsPage() {
   const [homeworkSummaryMap, setHomeworkSummaryMap] = useState({});
   const [loadingHomeworkSummary, setLoadingHomeworkSummary] = useState(false);
 
-  const lessonVideoInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const homeworkInputRef = useRef(null);
 
@@ -356,6 +356,30 @@ export default function LessonsPage() {
     setShowHomeworkModal(true);
   }, [activeTab, lessons, selectedGroupId]);
 
+  const uploadVideoFile = useCallback(async (file) => {
+    if (!file) return null;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await api.post('/erp/teacher/videos/upload', formData, {
+      headers: {
+        'Content-Type': undefined,
+      },
+    });
+
+    const payload = normalizeObject(res.data);
+    const uploadedLink = String(payload?.url || '').trim();
+    if (!uploadedLink) {
+      throw new Error("Video yuklandi, lekin URL olinmadi");
+    }
+
+    return {
+      fileName: String(payload?.fileName || file.name || '').trim(),
+      link: uploadedLink,
+    };
+  }, []);
+
   useEffect(() => {
     if (searchParams.get('create') !== '1') return;
     if (loadingGroups || loadingGroupDetail) return;
@@ -399,25 +423,10 @@ export default function LessonsPage() {
     setError('');
 
     try {
-      const lessonRes = await api.post('/erp/teacher/lessons', {
+      await api.post('/erp/teacher/lessons', {
         groupId: Number(selectedGroupId),
         title: lessonForm.title.trim(),
       });
-
-      const createdLesson = normalizeObject(lessonRes.data);
-      const optionalAttachment = serializeAttachment({
-        fileName: lessonForm.fileName,
-        link: lessonForm.link,
-      });
-
-      if (optionalAttachment && createdLesson?.id) {
-        await api.post('/erp/teacher/videos', {
-          lessonId: Number(createdLesson.id),
-          file: optionalAttachment,
-        });
-      } else if (optionalAttachment && !createdLesson?.id) {
-        setError("Dars yaratildi, lekin biriktirmani boglash uchun dars ID olinmadi. Videolar bo'limidan biriktiring");
-      }
 
       setShowLessonModal(false);
       setLessonForm(INITIAL_LESSON_FORM);
@@ -512,28 +521,33 @@ export default function LessonsPage() {
     }
   };
 
-  const pickLessonAttachmentFile = () => {
-    lessonVideoInputRef.current?.click();
-  };
-
-  const onLessonAttachmentSelected = (file) => {
-    if (!file) return;
-    setLessonForm((prev) => ({
-      ...prev,
-      fileName: file.name,
-    }));
-  };
-
   const pickVideoFile = () => {
     videoInputRef.current?.click();
   };
 
-  const onVideoFileSelected = (file) => {
+  const onVideoFileSelected = async (file) => {
     if (!file) return;
-    setVideoForm((prev) => ({
-      ...prev,
-      fileName: file.name,
-    }));
+
+    setUploadingMedia(true);
+    setError('');
+
+    try {
+      const uploaded = await uploadVideoFile(file);
+      if (!uploaded) return;
+
+      setVideoForm((prev) => ({
+        ...prev,
+        fileName: uploaded.fileName,
+        link: uploaded.link,
+      }));
+    } catch (e) {
+      setError(getApiErrorMessage(e, 'Videoni serverga yuklashda xatolik'));
+    } finally {
+      setUploadingMedia(false);
+      if (videoInputRef.current) {
+        videoInputRef.current.value = '';
+      }
+    }
   };
 
   const pickHomeworkFile = () => {
@@ -557,7 +571,7 @@ export default function LessonsPage() {
   if (loadingGroups) {
     return (
       <div className="flex justify-center py-14">
-        <Loader2 size={34} className="animate-spin text-violet-500" />
+        <Loader2 size={34} className="animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -610,7 +624,7 @@ export default function LessonsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-2xl border border-[#e6ebf6] bg-white p-5">
           <div className="flex items-center justify-between">
-            <BookOpen size={20} className="text-violet-500" />
+            <BookOpen size={20} className="text-emerald-600" />
             <span className="text-xs text-gray-400">{selectedGroupName}</span>
           </div>
           <p className="mt-3 text-sm text-gray-500">Darslar</p>
@@ -663,7 +677,7 @@ export default function LessonsPage() {
 
         {loadingGroupDetail ? (
           <div className="py-14 text-center">
-            <Loader2 size={28} className="animate-spin mx-auto text-violet-500" />
+            <Loader2 size={28} className="animate-spin mx-auto text-emerald-600" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -757,7 +771,7 @@ export default function LessonsPage() {
                                   href={attachment.link}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="text-violet-600 inline-flex items-center"
+                                  className="text-emerald-600 inline-flex items-center"
                                   onClick={(event) => event.stopPropagation()}
                                   title="Biriktirmani ochish"
                                 >
@@ -819,7 +833,7 @@ export default function LessonsPage() {
                               href={attachment.link}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-violet-600 inline-flex items-center gap-1"
+                              className="text-emerald-600 inline-flex items-center gap-1"
                             >
                               Ochish <ExternalLink size={14} />
                             </a>
@@ -869,50 +883,15 @@ export default function LessonsPage() {
                   value={lessonForm.title}
                   onChange={(event) => setLessonForm((prev) => ({ ...prev, title: event.target.value }))}
                   placeholder="Masalan: React Router amaliyoti"
-                  className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                  className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-              </div>
-
-              <div className="rounded-xl border border-[#e5ebf6] bg-[#f9fbff] p-3">
-                <p className="text-sm font-semibold text-gray-800">Ixtiyoriy biriktirma</p>
-                <p className="text-xs text-gray-500 mt-0.5">Dars yaratilgandan keyin shu fayl/link avtomatik biriktiriladi</p>
-
-                <div className="mt-3 space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={pickLessonAttachmentFile}
-                      className="h-10 rounded-xl border border-[#dfe4ef] bg-white px-3 text-sm font-semibold text-gray-700"
-                    >
-                      Video/Fayl tanlash
-                    </button>
-                    <input
-                      ref={lessonVideoInputRef}
-                      type="file"
-                      className="hidden"
-                      onChange={(event) => onLessonAttachmentSelected(event.target.files?.[0])}
-                    />
-                    <span className="text-xs text-gray-500">{lessonForm.fileName || 'Tanlanmagan'}</span>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Link (ixtiyoriy)</label>
-                    <input
-                      type="text"
-                      value={lessonForm.link}
-                      onChange={(event) => setLessonForm((prev) => ({ ...prev, link: event.target.value }))}
-                      placeholder="https://cdn.example.com/lesson-resource"
-                      className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
-                    />
-                  </div>
-                </div>
               </div>
 
               <button
                 type="button"
                 disabled={saving}
                 onClick={createLesson}
-                className="h-11 w-full rounded-xl bg-violet-500 text-sm font-semibold text-white hover:bg-violet-600 disabled:opacity-70"
+                className="h-11 w-full rounded-xl bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-70"
               >
                 {saving ? 'Saqlanmoqda...' : 'Yaratish va davom etish'}
               </button>
@@ -938,7 +917,7 @@ export default function LessonsPage() {
                 <select
                   value={videoForm.lessonId}
                   onChange={(event) => setVideoForm((prev) => ({ ...prev, lessonId: event.target.value }))}
-                  className="h-11 w-full rounded-xl border border-[#dfe4ef] bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                  className="h-11 w-full rounded-xl border border-[#dfe4ef] bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="">Darsni tanlang...</option>
                   {lessons.map((lesson, index) => (
@@ -961,7 +940,7 @@ export default function LessonsPage() {
               >
                 <UploadCloud size={32} className="mx-auto text-emerald-500" />
                 <p className="mt-2 text-base font-medium text-gray-700">Videofaylni shu yerga tashlang yoki tanlang</p>
-                <p className="mt-1 text-sm text-gray-500">Upload bo'lmasa fayl nomi saqlanadi, link bo'lsa alohida biriktiriladi</p>
+                <p className="mt-1 text-sm text-gray-500">Tanlangan video serverga yuklanadi va studentlar uchun ochiq link yaratiladi</p>
                 <input
                   ref={videoInputRef}
                   type="file"
@@ -977,6 +956,13 @@ export default function LessonsPage() {
                 </div>
               )}
 
+              {uploadingMedia && (
+                <div className="rounded-xl border border-[#e1e7f2] bg-[#f8fafe] px-3 py-2 text-xs text-gray-600 inline-flex items-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  Video yuklanmoqda...
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Video link (ixtiyoriy)</label>
                 <div className="relative">
@@ -986,7 +972,7 @@ export default function LessonsPage() {
                     value={videoForm.link}
                     onChange={(event) => setVideoForm((prev) => ({ ...prev, link: event.target.value }))}
                     placeholder="https://cdn.example.com/lesson.mp4"
-                    className="h-11 w-full rounded-xl border border-[#dfe4ef] pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                    className="h-11 w-full rounded-xl border border-[#dfe4ef] pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
@@ -1001,7 +987,7 @@ export default function LessonsPage() {
                 </button>
                 <button
                   type="button"
-                  disabled={saving}
+                  disabled={saving || uploadingMedia}
                   onClick={uploadVideo}
                   className="h-10 rounded-xl bg-emerald-500 px-4 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-70"
                 >
@@ -1031,7 +1017,7 @@ export default function LessonsPage() {
                   type="text"
                   value={homeworkForm.title}
                   onChange={(event) => setHomeworkForm((prev) => ({ ...prev, title: event.target.value }))}
-                  className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                  className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                   placeholder="Masalan: CRUD amaliyoti"
                 />
               </div>
@@ -1041,7 +1027,7 @@ export default function LessonsPage() {
                 <select
                   value={homeworkForm.lessonId}
                   onChange={(event) => setHomeworkForm((prev) => ({ ...prev, lessonId: event.target.value }))}
-                  className="h-11 w-full rounded-xl border border-[#dfe4ef] bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                  className="h-11 w-full rounded-xl border border-[#dfe4ef] bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="">Darsni tanlang...</option>
                   {lessons.map((lesson, index) => (
@@ -1060,7 +1046,7 @@ export default function LessonsPage() {
                     min={1}
                     value={homeworkForm.durationTime}
                     onChange={(event) => setHomeworkForm((prev) => ({ ...prev, durationTime: event.target.value }))}
-                    className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                    className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
@@ -1071,7 +1057,7 @@ export default function LessonsPage() {
                     min={1}
                     value={homeworkForm.maxAttempts}
                     onChange={(event) => setHomeworkForm((prev) => ({ ...prev, maxAttempts: event.target.value }))}
-                    className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                    className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
@@ -1084,7 +1070,7 @@ export default function LessonsPage() {
                     type="datetime-local"
                     value={homeworkForm.deadlineAt}
                     onChange={(event) => setHomeworkForm((prev) => ({ ...prev, deadlineAt: event.target.value }))}
-                    className="h-11 w-full rounded-xl border border-[#dfe4ef] pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                    className="h-11 w-full rounded-xl border border-[#dfe4ef] pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
@@ -1116,7 +1102,7 @@ export default function LessonsPage() {
                   value={homeworkForm.link}
                   onChange={(event) => setHomeworkForm((prev) => ({ ...prev, link: event.target.value }))}
                   placeholder="https://cdn.example.com/homework.pdf"
-                  className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                  className="h-11 w-full rounded-xl border border-[#dfe4ef] px-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
@@ -1125,7 +1111,7 @@ export default function LessonsPage() {
                   type="checkbox"
                   checked={homeworkForm.allowLateSubmission}
                   onChange={(event) => setHomeworkForm((prev) => ({ ...prev, allowLateSubmission: event.target.checked }))}
-                  className="h-4 w-4 rounded accent-violet-500"
+                  className="h-4 w-4 rounded accent-emerald-600"
                 />
                 Deadline dan keyin topshirishga ruxsat berilsin
               </label>

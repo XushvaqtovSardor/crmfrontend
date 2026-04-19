@@ -125,26 +125,28 @@ function buildProfitPoints(values) {
 
 function StatCard({ title, value, icon: Icon }) {
     return (
-        <div className="rounded-3xl border border-slate-200 bg-white px-5 py-7 shadow-sm">
-            <div className="mb-4 flex justify-center text-violet-500">
-                <Icon size={28} strokeWidth={1.8} />
+        <div className="group rounded-3xl border border-emerald-900/40 bg-linear-to-br from-[#101713] via-[#15211a] to-[#242012] px-5 py-7 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_45px_-24px_rgba(0,0,0,0.75)]">
+            <div className="mb-4 flex justify-center text-amber-300">
+                <div className="rounded-2xl border border-amber-300/30 bg-black/20 p-2.5 transition group-hover:scale-105">
+                    <Icon size={28} strokeWidth={1.8} />
+                </div>
             </div>
-            <p className="text-center text-[15px] text-slate-800">{title}</p>
-            <p className="mt-3 text-center text-3xl font-semibold text-slate-900">{value}</p>
+            <p className="text-center text-[15px] text-slate-300">{title}</p>
+            <p className="mt-3 text-center text-3xl font-semibold text-white">{value}</p>
         </div>
     );
 }
 
 function AccordionBlock({ title, open, onToggle, children }) {
     return (
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <section className="rounded-2xl border border-emerald-900/35 bg-[#0f1713] shadow-sm overflow-hidden">
             <button
                 type="button"
                 onClick={onToggle}
-                className="w-full flex items-center justify-between px-6 py-5 text-left"
+                className="w-full flex items-center justify-between bg-linear-to-r from-[#101913] to-[#181f15] px-6 py-5 text-left"
             >
-                <h3 className="text-2xl leading-none font-semibold text-slate-900">{title}</h3>
-                <ChevronDown className={cn('text-slate-500 transition-transform', open && 'rotate-180')} />
+                <h3 className="text-2xl leading-none font-semibold text-slate-100">{title}</h3>
+                <ChevronDown className={cn('text-amber-300 transition-transform', open && 'rotate-180')} />
             </button>
             {open && <div className="px-6 pb-6">{children}</div>}
         </section>
@@ -160,10 +162,10 @@ function RingChart({ percent = 0 }) {
             <div
                 className="relative grid h-48 w-48 place-items-center rounded-full"
                 style={{
-                    background: `conic-gradient(#16a34a 0 ${angle}, #ef4444 ${angle} 360deg)`,
+                    background: `conic-gradient(#22c55e 0 ${angle}, #f0b429 ${angle} 360deg)`,
                 }}
             >
-                <div className="grid h-32 w-32 place-items-center rounded-full bg-white text-4xl font-semibold text-slate-900">
+                <div className="grid h-32 w-32 place-items-center rounded-full border border-emerald-900/35 bg-[#0f1713] text-4xl font-semibold text-white">
                     {clamped}%
                 </div>
             </div>
@@ -182,48 +184,48 @@ function PaymentSection({
 }) {
     return (
         <div>
-            <div className="mb-6 flex items-center gap-2 text-[15px] font-medium text-slate-700">
+            <div className="mb-6 flex items-center gap-2 text-[15px] font-medium text-slate-300">
                 <span>💰</span>
                 <span>Hajmi</span>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
                 <div className="space-y-6">
-                    <div className="rounded-3xl bg-slate-50 p-5">
-                        <div className="mb-4 flex justify-between gap-4 text-[18px] font-medium text-slate-900">
+                    <div className="rounded-3xl border border-emerald-900/25 bg-[#151f19] p-5">
+                        <div className="mb-4 flex justify-between gap-4 text-[18px] font-medium text-slate-100">
                             <span>To'lash kerak bo'lgan summa</span>
                             <span>{formatCurrency(totalDueAmount)}</span>
                         </div>
-                        <div className="space-y-3 border-t border-slate-200 pt-4 text-[16px]">
+                        <div className="space-y-3 border-t border-emerald-900/30 pt-4 text-[16px]">
                             <div className="flex justify-between">
                                 <span className="text-slate-400">To'langan summa</span>
                                 <span className="font-medium text-emerald-500">{formatCurrency(paidAmount)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-slate-400">Qolgan qarzi</span>
-                                <span className="font-medium text-red-500">{formatCurrency(debtAmount)}</span>
+                                <span className="font-medium text-amber-300">{formatCurrency(debtAmount)}</span>
                             </div>
                         </div>
                     </div>
 
                     <div>
-                        <div className="mb-4 flex items-center gap-2 text-[15px] font-medium text-slate-700">
+                        <div className="mb-4 flex items-center gap-2 text-[15px] font-medium text-slate-300">
                             <span>🧑🏻‍🎓</span>
                             <span>Soni</span>
                         </div>
-                        <div className="rounded-3xl bg-slate-50 p-5">
-                            <div className="mb-4 flex justify-between gap-4 text-[18px] font-medium text-slate-900">
+                        <div className="rounded-3xl border border-emerald-900/25 bg-[#151f19] p-5">
+                            <div className="mb-4 flex justify-between gap-4 text-[18px] font-medium text-slate-100">
                                 <span>To'lash kerak bo'lgan o'quvchilar</span>
                                 <span>{studentsToPay}</span>
                             </div>
-                            <div className="space-y-3 border-t border-slate-200 pt-4 text-[16px]">
+                            <div className="space-y-3 border-t border-emerald-900/30 pt-4 text-[16px]">
                                 <div className="flex justify-between">
                                     <span className="text-slate-400">To'lagan o'quvchilar</span>
                                     <span className="font-medium text-emerald-500">{paidStudentsCount}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-slate-400">Qolgan o'quvchilar</span>
-                                    <span className="font-medium text-red-500">{remainingStudentsCount}</span>
+                                    <span className="font-medium text-amber-300">{remainingStudentsCount}</span>
                                 </div>
                             </div>
                         </div>
@@ -260,7 +262,7 @@ function ProfitSection({ values, year, yearOptions, onYearChange, paidAmount, de
                 <select
                     value={year}
                     onChange={(event) => onYearChange(Number(event.target.value))}
-                    className="h-10 min-w-32 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 shadow-sm"
+                    className="h-10 min-w-32 rounded-2xl border border-emerald-900/35 bg-[#141f19] px-4 text-sm text-slate-200 shadow-sm"
                 >
                     {yearOptions.map((item) => (
                         <option key={item} value={item}>{item}</option>
@@ -268,8 +270,8 @@ function ProfitSection({ values, year, yearOptions, onYearChange, paidAmount, de
                 </select>
             </div>
 
-            <div className="relative h-80 overflow-hidden rounded-2xl bg-slate-50/40">
-                <div className="absolute left-0 top-0 flex h-full flex-col justify-between py-6 text-sm text-slate-300">
+            <div className="relative h-80 overflow-hidden rounded-2xl border border-emerald-900/25 bg-[#111913]">
+                <div className="absolute left-0 top-0 flex h-full flex-col justify-between py-6 text-sm text-slate-500">
                     {axisLabels.map((value, idx) => (
                         <span key={`${value}-${idx}`}>{formatCompactNumber(value)}</span>
                     ))}
@@ -279,27 +281,27 @@ function ProfitSection({ values, year, yearOptions, onYearChange, paidAmount, de
                     <path d={pathData} fill="none" stroke="#22c55e" strokeWidth="4" strokeLinecap="round" />
                     {points.map((point) => (
                         <g key={point.month}>
-                            <circle cx={point.x} cy={point.y} r="6" fill="white" stroke="#22c55e" strokeWidth="4" />
+                            <circle cx={point.x} cy={point.y} r="6" fill="#111913" stroke="#f0b429" strokeWidth="4" />
                             <title>{`${point.month} ${year}: ${formatCurrency(point.value)}`}</title>
                         </g>
                     ))}
                 </svg>
 
-                <div className="absolute bottom-1 left-12 right-1 flex justify-between px-1 text-sm text-slate-400">
+                <div className="absolute bottom-1 left-12 right-1 flex justify-between px-1 text-sm text-slate-500">
                     {points.map((point) => (
                         <span key={`${point.month}-axis`}>{point.month}</span>
                     ))}
                 </div>
 
-                <div className="hidden lg:block absolute left-50 top-22 w-65 rounded-3xl border border-slate-100 bg-white/95 p-5 shadow-xl">
-                    <p className="mb-4 text-[26px] font-semibold text-slate-900">{highlightedMonth} {year}</p>
-                    <div className="mb-3 border-t border-slate-100 pt-4 text-[18px]">
-                        <span className="text-slate-500">To'langan summa </span>
-                        <span className="font-semibold text-emerald-500">{formatCurrency(highlightedValue || paidAmount)}</span>
+                <div className="hidden lg:block absolute left-50 top-22 w-65 rounded-3xl border border-amber-400/20 bg-[#111913]/95 p-5 shadow-xl shadow-black/30">
+                    <p className="mb-4 text-[26px] font-semibold text-white">{highlightedMonth} {year}</p>
+                    <div className="mb-3 border-t border-emerald-900/35 pt-4 text-[18px]">
+                        <span className="text-slate-400">To'langan summa </span>
+                        <span className="font-semibold text-emerald-400">{formatCurrency(highlightedValue || paidAmount)}</span>
                     </div>
                     <div className="text-[18px]">
-                        <span className="text-slate-500">Qolgan qarz: </span>
-                        <span className="font-semibold text-red-500">{formatCurrency(debtAmount)}</span>
+                        <span className="text-slate-400">Qolgan qarz: </span>
+                        <span className="font-semibold text-amber-300">{formatCurrency(debtAmount)}</span>
                     </div>
                 </div>
             </div>
@@ -312,18 +314,18 @@ function ScheduleSection({ scheduleRows, scheduleFilter, setScheduleFilter, sche
         <div>
             <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <div className="rounded-2xl border border-slate-200 px-4 py-2 text-center">
+                    <div className="rounded-2xl border border-emerald-900/35 bg-[#111913] px-4 py-2 text-center">
                         <div className="text-sm text-slate-400">{scheduleDateCard.monthShort}</div>
-                        <div className="text-4xl font-semibold text-violet-600">{scheduleDateCard.day}</div>
+                        <div className="text-4xl font-semibold text-amber-300">{scheduleDateCard.day}</div>
                     </div>
                     <div>
-                        <div className="text-2xl font-semibold capitalize text-slate-900">{scheduleDateCard.monthYear}</div>
-                        <div className="text-slate-500">{scheduleDateCard.weekDay}</div>
+                        <div className="text-2xl font-semibold capitalize text-slate-100">{scheduleDateCard.monthYear}</div>
+                        <div className="text-slate-400">{scheduleDateCard.weekDay}</div>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="flex rounded-2xl bg-slate-100 p-1">
+                    <div className="flex rounded-2xl bg-[#171f19] p-1">
                         {Object.entries(SCHEDULE_FILTERS).map(([key, meta]) => (
                             <button
                                 key={key}
@@ -331,7 +333,9 @@ function ScheduleSection({ scheduleRows, scheduleFilter, setScheduleFilter, sche
                                 onClick={() => setScheduleFilter(key)}
                                 className={cn(
                                     'rounded-xl px-4 py-2 transition',
-                                    scheduleFilter === key ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-600',
+                                    scheduleFilter === key
+                                        ? 'bg-[#0d1410] text-amber-300 shadow-sm shadow-black/20'
+                                        : 'text-slate-300 hover:text-slate-100',
                                 )}
                             >
                                 {meta.label}
@@ -341,41 +345,41 @@ function ScheduleSection({ scheduleRows, scheduleFilter, setScheduleFilter, sche
                     <button
                         type="button"
                         onClick={() => shiftDate(-1)}
-                        className="grid h-11 w-11 place-items-center rounded-2xl text-slate-500 hover:bg-slate-100"
+                        className="grid h-11 w-11 place-items-center rounded-2xl text-slate-300 hover:bg-[#1a241d]"
                     >
                         <ChevronLeft />
                     </button>
                     <button
                         type="button"
                         onClick={() => shiftDate(0, true)}
-                        className="rounded-2xl border border-slate-200 px-5 py-2.5 text-slate-800"
+                        className="rounded-2xl border border-emerald-900/40 bg-[#111913] px-5 py-2.5 text-slate-100 hover:bg-[#18231c]"
                     >
                         Bugun
                     </button>
                     <button
                         type="button"
                         onClick={() => shiftDate(1)}
-                        className="grid h-11 w-11 place-items-center rounded-2xl text-slate-500 hover:bg-slate-100"
+                        className="grid h-11 w-11 place-items-center rounded-2xl text-slate-300 hover:bg-[#1a241d]"
                     >
                         <ChevronRight />
                     </button>
                 </div>
             </div>
 
-            <div className="mb-4 border-b border-slate-200 pb-4 text-slate-600">
-                Tanlangan kun turi: <span className="font-medium text-violet-600">{SCHEDULE_FILTERS[scheduleFilter].label}</span>
+            <div className="mb-4 border-b border-emerald-900/30 pb-4 text-slate-300">
+                Tanlangan kun turi: <span className="font-medium text-amber-300">{SCHEDULE_FILTERS[scheduleFilter].label}</span>
             </div>
 
             <div className="space-y-0">
                 {scheduleRows.length > 0 ? (
                     scheduleRows.map((row) => (
-                        <div key={row.roomName} className="grid min-h-18 grid-cols-[70px_1fr] border-b border-slate-200">
-                            <div className="flex items-center text-[18px] text-slate-700">{row.roomName}</div>
+                        <div key={row.roomName} className="grid min-h-18 grid-cols-[70px_1fr] border-b border-emerald-900/20">
+                            <div className="flex items-center text-[18px] text-slate-200">{row.roomName}</div>
                             <div className="flex flex-wrap items-center gap-3 py-2">
                                 {row.groups.map((group) => (
-                                    <div key={group.id} className={cn('rounded-2xl bg-violet-600 px-3 py-3 text-white shadow-sm', getScheduleChipWidth(group.name))}>
+                                    <div key={group.id} className={cn('rounded-2xl bg-linear-to-r from-emerald-600 to-amber-500 px-3 py-3 text-white shadow-sm shadow-black/20 transition hover:scale-[1.02]', getScheduleChipWidth(group.name))}>
                                         <div className="text-[14px] font-medium leading-tight">{group.name}</div>
-                                        <div className="mt-1 flex items-center gap-1 text-xs text-violet-100">
+                                        <div className="mt-1 flex items-center gap-1 text-xs text-emerald-50">
                                             <Clock size={12} />
                                             <span>{group.startTime || '--:--'}</span>
                                             <span>•</span>
@@ -387,7 +391,7 @@ function ScheduleSection({ scheduleRows, scheduleFilter, setScheduleFilter, sche
                         </div>
                     ))
                 ) : (
-                    <div className="rounded-2xl border border-dashed border-slate-200 py-10 text-center text-sm text-slate-400">
+                    <div className="rounded-2xl border border-dashed border-emerald-900/30 bg-[#111913] py-10 text-center text-sm text-slate-400">
                         Tanlangan jadval uchun guruhlar topilmadi.
                     </div>
                 )}
@@ -570,32 +574,32 @@ export default function AdminDashboard() {
     if (loading) {
         return (
             <div className="space-y-5">
-                <div>
-                    <h1 className="text-3xl font-semibold text-slate-900 md:text-4xl">Salom, {user?.fullName || 'Foydalanuvchi'}!</h1>
-                    <p className="mt-2 text-base text-slate-600">EduCoin platformasiga xush kelibsiz!</p>
+                <div className="rounded-3xl border border-emerald-900/35 bg-linear-to-r from-[#0f1713] via-[#16231b] to-[#242012] p-6">
+                    <h1 className="text-3xl font-semibold text-white md:text-4xl">Salom, {user?.fullName || 'Foydalanuvchi'}!</h1>
+                    <p className="mt-2 text-base text-slate-300">EduCoin platformasiga xush kelibsiz!</p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
                     {[...Array(6)].map((_, idx) => (
-                        <div key={idx} className="h-42.5 rounded-3xl border border-slate-200 bg-white animate-pulse" />
+                        <div key={idx} className="h-42.5 rounded-3xl border border-emerald-900/30 bg-[#101713] animate-pulse" />
                     ))}
                 </div>
 
                 <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-                    <div className="h-30 rounded-2xl border border-slate-200 bg-white animate-pulse" />
-                    <div className="h-30 rounded-2xl border border-slate-200 bg-white animate-pulse" />
+                    <div className="h-30 rounded-2xl border border-emerald-900/30 bg-[#101713] animate-pulse" />
+                    <div className="h-30 rounded-2xl border border-emerald-900/30 bg-[#101713] animate-pulse" />
                 </div>
 
-                <div className="h-30 rounded-2xl border border-slate-200 bg-white animate-pulse" />
+                <div className="h-30 rounded-2xl border border-emerald-900/30 bg-[#101713] animate-pulse" />
             </div>
         );
     }
 
     return (
         <div className="space-y-4">
-            <div>
-                <h1 className="text-3xl font-semibold text-slate-950 md:text-4xl">Salom, {user?.fullName || 'Foydalanuvchi'}!</h1>
-                <p className="mt-2 text-base text-slate-600">EduCoin platformasiga xush kelibsiz!</p>
+            <div className="rounded-3xl border border-emerald-900/35 bg-linear-to-r from-[#0f1713] via-[#16231b] to-[#242012] p-6">
+                <h1 className="text-3xl font-semibold text-white md:text-4xl">Salom, {user?.fullName || 'Foydalanuvchi'}!</h1>
+                <p className="mt-2 text-base text-slate-300">EduCoin platformasiga xush kelibsiz!</p>
             </div>
 
             {error && (

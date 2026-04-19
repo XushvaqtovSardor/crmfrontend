@@ -71,6 +71,17 @@ api.interceptors.request.use((config) => {
         config.__requestKey = key;
         pendingGetControllers.set(key, controller);
     }
+
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+        if (typeof config.headers?.set === 'function') {
+            config.headers.set('Content-Type', undefined);
+        }
+        else if (config.headers) {
+            delete config.headers['Content-Type'];
+            delete config.headers['content-type'];
+        }
+    }
+
     const token = localStorage.getItem('erp_access_token');
     const user = readStoredUser();
     if (token) {

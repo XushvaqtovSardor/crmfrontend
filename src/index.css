@@ -7,10 +7,10 @@
   --surface-2: #f8f9fc;
   --text: #141b2d;
   --text-muted: #5e677f;
-  --brand: #7e56d8;
-  --brand-strong: #5e35c1;
+  --brand: #1f9d63;
+  --brand-strong: #f0b429;
   --border: #dde1eb;
-  --ring: #b7a3ec;
+  --ring: #8bd0ae;
 }
 
 .theme-night {
@@ -20,10 +20,10 @@
   --surface-2: #1f2950;
   --text: #f2f4ff;
   --text-muted: #adb7de;
-  --brand: #9a7df2;
-  --brand-strong: #7e56d8;
+  --brand: #2bb673;
+  --brand-strong: #d5a021;
   --border: #2a3665;
-  --ring: #5f4ab3;
+  --ring: #2f8f63;
 }
 
 body {

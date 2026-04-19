@@ -177,16 +177,16 @@ export default function StudentDashboard() {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-emerald-900/35 bg-linear-to-r from-[#0f1713] via-[#16231b] to-[#242012] p-5">
                 <div>
-                    <h1 className="text-[36px] leading-none font-semibold text-gray-900">Bosh sahifa</h1>
-                    <p className="text-sm text-gray-500 mt-1">Salom, {user?.fullName || 'Student'}!</p>
+                    <h1 className="text-[36px] leading-none font-semibold text-white">Bosh sahifa</h1>
+                    <p className="mt-1 text-sm text-slate-300">Salom, {user?.fullName || 'Student'}!</p>
                 </div>
 
                 <button
                     type="button"
                     onClick={loadData}
-                    className="h-10 rounded-xl border border-[#d6dbe4] bg-white px-4 text-sm font-semibold text-gray-700 inline-flex items-center gap-2"
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-emerald-800/40 bg-[#111913] px-4 text-sm font-semibold text-slate-200 hover:bg-[#18231c]"
                 >
                     <RefreshCcw size={15} /> Yangilash
                 </button>
@@ -198,29 +198,29 @@ export default function StudentDashboard() {
                 </div>
             )}
 
-            <section className="rounded-2xl border border-[#dce1ea] bg-white p-5">
+            <section className="rounded-2xl border border-emerald-900/35 bg-[#101713] p-5">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div>
-                        <p className="text-sm text-gray-500">Kumushlar</p>
-                        <h2 className="text-3xl font-semibold text-[#af6828] inline-flex items-center gap-2">
+                        <p className="text-sm text-slate-300">Kumushlar</p>
+                        <h2 className="inline-flex items-center gap-2 text-3xl font-semibold text-amber-300">
                             <CircleDollarSign size={24} />
                             {coins}
                         </h2>
                     </div>
 
                     <div className="text-right">
-                        <p className="text-sm text-gray-500">Level {levelState.level}</p>
-                        <p className="text-base font-semibold text-gray-900">XP {xp}</p>
+                        <p className="text-sm text-slate-300">Level {levelState.level}</p>
+                        <p className="text-base font-semibold text-white">XP {xp}</p>
                     </div>
                 </div>
 
                 <div className="mt-4">
-                    <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                    <div className="mb-1.5 flex items-center justify-between text-xs text-slate-400">
                         <span>Level progress</span>
                         <span>{levelState.inLevel} / 500 XP</span>
                     </div>
-                    <div className="h-3 rounded-full bg-[#ebeef5] overflow-hidden">
-                        <div className="h-full rounded-full bg-[#d58843]" style={{ width: `${levelState.progressPercent}%` }} />
+                    <div className="h-3 overflow-hidden rounded-full bg-[#1f2a23]">
+                        <div className="h-full rounded-full bg-linear-to-r from-emerald-500 to-amber-400" style={{ width: `${levelState.progressPercent}%` }} />
                     </div>
                 </div>
             </section>
@@ -247,10 +247,10 @@ export default function StudentDashboard() {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-4">
-                <section className="rounded-2xl border border-[#dce1ea] bg-white p-4 space-y-4">
+                <section className="space-y-4 rounded-2xl border border-emerald-900/35 bg-[#101713] p-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-base font-semibold text-gray-800 inline-flex items-center gap-2">
-                            <CalendarDays size={16} className="text-[#be7734]" />
+                        <h3 className="inline-flex items-center gap-2 text-base font-semibold text-slate-100">
+                            <CalendarDays size={16} className="text-amber-300" />
                             Dars jadvali
                         </h3>
 
@@ -258,15 +258,15 @@ export default function StudentDashboard() {
                             <button
                                 type="button"
                                 onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                                className="h-8 w-8 rounded-lg border border-[#dce1ea] bg-white text-gray-600 inline-flex items-center justify-center"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-900/35 bg-[#141f19] text-slate-300"
                             >
                                 <ChevronLeft size={15} />
                             </button>
-                            <span className="text-sm font-medium text-gray-700 min-w-40 text-center">{monthLabel(calendarMonth)}</span>
+                            <span className="min-w-40 text-center text-sm font-medium text-slate-200">{monthLabel(calendarMonth)}</span>
                             <button
                                 type="button"
                                 onClick={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                                className="h-8 w-8 rounded-lg border border-[#dce1ea] bg-white text-gray-600 inline-flex items-center justify-center"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-900/35 bg-[#141f19] text-slate-300"
                             >
                                 <ChevronRight size={15} />
                             </button>
@@ -279,7 +279,7 @@ export default function StudentDashboard() {
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-400">
+                            <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-500">
                                 {['Ya', 'Du', 'Se', 'Cho', 'Pa', 'Ju', 'Sha'].map((day) => (
                                     <div key={day} className="py-1">{day}</div>
                                 ))}
@@ -299,14 +299,14 @@ export default function StudentDashboard() {
                                             type="button"
                                             onClick={() => setSelectedDate(dateKey)}
                                             className={`h-10 rounded-lg border text-sm ${isSelected
-                                                ? 'border-[#d48a42] bg-[#fff3e6] text-[#b0692a]'
+                                                ? 'border-amber-400/60 bg-[#2a1f12] text-amber-300'
                                                 : isCurrentMonth
-                                                    ? 'border-[#eceff6] bg-white text-gray-700'
-                                                    : 'border-[#f2f4f8] bg-[#fafbfd] text-gray-400'} ${isToday ? 'font-semibold' : ''}`}
+                                                    ? 'border-emerald-900/30 bg-[#121b16] text-slate-200'
+                                                    : 'border-emerald-900/20 bg-[#0f1512] text-slate-600'} ${isToday ? 'font-semibold' : ''}`}
                                         >
                                             <span className="inline-flex items-center gap-1">
                                                 {dateValue.getDate()}
-                                                {hasEvent ? <span className="h-1.5 w-1.5 rounded-full bg-[#d48a42]" /> : null}
+                                                {hasEvent ? <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> : null}
                                             </span>
                                         </button>
                                     );
@@ -316,22 +316,22 @@ export default function StudentDashboard() {
                     )}
                 </section>
 
-                <section className="rounded-2xl border border-[#dce1ea] bg-white p-4">
-                    <h3 className="text-base font-semibold text-gray-800">Tanlangan kundagi darslar</h3>
-                    <p className="text-xs text-gray-500 mt-1">{selectedDate}</p>
+                <section className="rounded-2xl border border-emerald-900/35 bg-[#101713] p-4">
+                    <h3 className="text-base font-semibold text-slate-100">Tanlangan kundagi darslar</h3>
+                    <p className="mt-1 text-xs text-slate-400">{selectedDate}</p>
 
                     <div className="mt-3 space-y-2 max-h-105 overflow-auto pr-1">
                         {selectedEvents.length > 0 ? selectedEvents.map((event) => (
                             <article
                                 key={event.id}
-                                className={`rounded-xl border px-3 py-2 ${event.type === 'homework' ? 'border-[#f2d2ad] bg-[#fff7ef]' : 'border-[#dbe9d8] bg-[#f1faf0]'}`}
+                                className={`rounded-xl border px-3 py-2 ${event.type === 'homework' ? 'border-amber-400/25 bg-[#241d12]' : 'border-emerald-500/25 bg-[#15211a]'}`}
                             >
-                                <p className="text-sm font-semibold text-gray-800">{event.title}</p>
-                                <p className="text-xs text-gray-500 mt-0.5">{event.subtitle}</p>
-                                <p className="text-xs mt-1 font-medium text-gray-700">{event.time}</p>
+                                <p className="text-sm font-semibold text-slate-100">{event.title}</p>
+                                <p className="mt-0.5 text-xs text-slate-400">{event.subtitle}</p>
+                                <p className="mt-1 text-xs font-medium text-slate-200">{event.time}</p>
                             </article>
                         )) : (
-                            <div className="rounded-xl border border-dashed border-[#dce1ea] bg-[#fafbfd] py-8 text-center text-sm text-gray-500">
+                            <div className="rounded-xl border border-dashed border-emerald-900/30 bg-[#0f1512] py-8 text-center text-sm text-slate-400">
                                 Bu kunda reja yo'q
                             </div>
                         )}
@@ -344,13 +344,13 @@ export default function StudentDashboard() {
 
 function InfoCard({ icon, title, value, subtitle }) {
     return (
-        <article className="rounded-2xl border border-[#dce1ea] bg-white p-4">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#fff3e6] text-[#c07937]">
+        <article className="rounded-2xl border border-emerald-900/35 bg-linear-to-br from-[#101713] via-[#15211a] to-[#241f12] p-4 transition hover:-translate-y-0.5">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-amber-400/30 bg-amber-500/15 text-amber-300">
                 {icon}
             </span>
-            <p className="text-xs text-gray-500 mt-3">{title}</p>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p>
-            <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+            <p className="mt-3 text-xs text-slate-400">{title}</p>
+            <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
+            <p className="mt-1 text-xs text-slate-400">{subtitle}</p>
         </article>
     );
 }

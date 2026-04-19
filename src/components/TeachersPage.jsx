@@ -37,6 +37,12 @@ function normalizeList(payload) {
     return [];
 }
 
+function normalizeObject(payload) {
+    if (payload?.data?.data) return payload.data.data;
+    if (payload?.data) return payload.data;
+    return null;
+}
+
 function formatDate(value) {
     if (!value) return '--';
     const parsed = new Date(value);
@@ -87,6 +93,7 @@ export default function TeachersPage() {
     const [teachers, setTeachers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [coinLoadingId, setCoinLoadingId] = useState(0);
     const [error, setError] = useState('');
 
@@ -248,15 +255,41 @@ export default function TeachersPage() {
         }
     };
 
-    const handlePhotoUpload = (event) => {
+    const uploadProfileImage = useCallback(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await api.post('/erp/media/images/upload', formData, {
+            headers: {
+                'Content-Type': undefined,
+            },
+        });
+
+        const payload = normalizeObject(response.data);
+        const uploadedUrl = String(payload?.url || '').trim();
+        if (!uploadedUrl) {
+            throw new Error('Rasm URL qaytmadi');
+        }
+
+        return uploadedUrl;
+    }, []);
+
+    const handlePhotoUpload = async (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = () => {
-            setForm((prev) => ({ ...prev, photo: String(reader.result || '') }));
-        };
-        reader.readAsDataURL(file);
+        setUploadingPhoto(true);
+        setError('');
+
+        try {
+            const uploadedUrl = await uploadProfileImage(file);
+            setForm((prev) => ({ ...prev, photo: uploadedUrl }));
+        } catch (e) {
+            setError(getApiErrorMessage(e, 'Rasmni yuklashda xatolik'));
+        } finally {
+            setUploadingPhoto(false);
+            event.target.value = '';
+        }
     };
 
     return (
@@ -275,14 +308,14 @@ export default function TeachersPage() {
                     <button
                         type="button"
                         onClick={openCreate}
-                        className="h-11 px-5 rounded-xl bg-violet-600 text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-violet-700 transition"
+                        className="h-11 px-5 rounded-xl bg-emerald-600 text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-emerald-700 transition"
                     >
                         <Plus size={16} /> O'qituvchi qo'shish
                     </button>
 
                     <button
                         type="button"
-                        className="h-11 px-5 rounded-xl bg-emerald-500 text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-emerald-600 transition"
+                        className="h-11 px-5 rounded-xl bg-amber-500 text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-amber-600 transition"
                     >
                         <Upload size={16} /> Exceldan yuklash
                     </button>
@@ -366,7 +399,7 @@ export default function TeachersPage() {
                             {loading ? (
                                 <tr>
                                     <td colSpan={9} className="py-16 text-center">
-                                        <Loader2 size={24} className="animate-spin mx-auto text-violet-500" />
+                                        <Loader2 size={24} className="animate-spin mx-auto text-emerald-600" />
                                     </td>
                                 </tr>
                             ) : filteredTeachers.length > 0 ? (
@@ -519,7 +552,7 @@ export default function TeachersPage() {
                                     value={form.phone}
                                     onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
                                     placeholder="+998 __ ___ __ __"
-                                    className="h-12 w-full rounded-xl border border-slate-200 px-4 outline-none placeholder:text-slate-400 focus:border-violet-400"
+                                    className="h-12 w-full rounded-xl border border-slate-200 px-4 outline-none placeholder:text-slate-400 focus:border-emerald-500"
                                 />
                             </DrawerField>
 
@@ -531,7 +564,7 @@ export default function TeachersPage() {
                                         value={form.email}
                                         onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
                                         placeholder="example@gmail.com"
-                                        className="h-12 w-full rounded-xl border border-slate-200 pl-10 pr-4 outline-none placeholder:text-slate-400 focus:border-violet-400"
+                                        className="h-12 w-full rounded-xl border border-slate-200 pl-10 pr-4 outline-none placeholder:text-slate-400 focus:border-emerald-500"
                                     />
                                 </div>
                             </DrawerField>
@@ -542,7 +575,7 @@ export default function TeachersPage() {
                                     value={form.fullName}
                                     onChange={(event) => setForm((prev) => ({ ...prev, fullName: event.target.value }))}
                                     placeholder="Ism Familiya Otasining ismi"
-                                    className="h-12 w-full rounded-xl border border-slate-200 px-4 outline-none placeholder:text-slate-400 focus:border-violet-400"
+                                    className="h-12 w-full rounded-xl border border-slate-200 px-4 outline-none placeholder:text-slate-400 focus:border-emerald-500"
                                 />
                             </DrawerField>
 
@@ -551,7 +584,7 @@ export default function TeachersPage() {
                                     type="date"
                                     value={form.birth_date}
                                     onChange={(event) => setForm((prev) => ({ ...prev, birth_date: event.target.value }))}
-                                    className="h-12 w-full rounded-xl border border-slate-200 px-4 outline-none focus:border-violet-400"
+                                    className="h-12 w-full rounded-xl border border-slate-200 px-4 outline-none focus:border-emerald-500"
                                 />
                             </DrawerField>
 
@@ -561,13 +594,13 @@ export default function TeachersPage() {
                                     value={form.password}
                                     onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
                                     placeholder="Parol kiriting"
-                                    className="h-12 w-full rounded-xl border border-slate-200 px-4 outline-none placeholder:text-slate-400 focus:border-violet-400"
+                                    className="h-12 w-full rounded-xl border border-slate-200 px-4 outline-none placeholder:text-slate-400 focus:border-emerald-500"
                                 />
                             </DrawerField>
 
                             <DrawerField label="Guruhlar">
                                 <div className="text-[30px] leading-none text-slate-700">{selectedGroupCount}</div>
-                                <button type="button" className="mt-1 text-violet-500 text-[22px] leading-none">
+                                <button type="button" className="mt-1 text-amber-600 text-[22px] leading-none">
                                     + Qo'shish
                                 </button>
                             </DrawerField>
@@ -580,7 +613,7 @@ export default function TeachersPage() {
                                             name="teacher-gender"
                                             checked={form.gender === 'MALE'}
                                             onChange={() => setForm((prev) => ({ ...prev, gender: 'MALE' }))}
-                                            className="h-4 w-4 accent-violet-500"
+                                            className="h-4 w-4 accent-emerald-600"
                                         />
                                         Erkak
                                     </label>
@@ -590,7 +623,7 @@ export default function TeachersPage() {
                                             name="teacher-gender"
                                             checked={form.gender === 'FEMALE'}
                                             onChange={() => setForm((prev) => ({ ...prev, gender: 'FEMALE' }))}
-                                            className="h-4 w-4 accent-violet-500"
+                                            className="h-4 w-4 accent-emerald-600"
                                         />
                                         Ayol
                                     </label>
@@ -602,10 +635,17 @@ export default function TeachersPage() {
                                     <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-slate-100 text-slate-500">
                                         <UploadCloud size={24} />
                                     </div>
-                                    <p className="text-[16px] text-violet-500">Click to upload <span className="text-slate-500">yoki yuklang</span></p>
+                                    <p className="text-[16px] text-emerald-600">Click to upload <span className="text-slate-500">yoki yuklang</span></p>
                                     <p className="mt-1 text-xs text-slate-400">JPG yoki PNG (max. 800x800px)</p>
                                     <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
                                 </label>
+
+                                {uploadingPhoto && (
+                                    <p className="mt-2 text-xs text-gray-500 inline-flex items-center gap-1.5">
+                                        <Loader2 size={13} className="animate-spin" />
+                                        Rasm yuklanmoqda...
+                                    </p>
+                                )}
 
                                 {form.photo && (
                                     <div className="mt-2 h-20 rounded-xl overflow-hidden border border-slate-200">
@@ -627,7 +667,7 @@ export default function TeachersPage() {
                                 type="button"
                                 onClick={saveTeacher}
                                 disabled={saving}
-                                className="rounded-xl bg-violet-600 px-6 py-2.5 text-[18px] font-medium text-white shadow-lg shadow-violet-200 disabled:opacity-70"
+                                className="rounded-xl bg-emerald-600 px-6 py-2.5 text-[18px] font-medium text-white shadow-lg shadow-emerald-200 disabled:opacity-70"
                             >
                                 {saving ? 'Saqlanmoqda...' : 'Saqlash'}
                             </button>

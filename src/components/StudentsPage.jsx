@@ -113,6 +113,7 @@ export default function StudentsPage() {
     const [studentGroups, setStudentGroups] = useState({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [error, setError] = useState('');
     const [tab, setTab] = useState('ACTIVE');
     const [search, setSearch] = useState('');
@@ -312,18 +313,47 @@ export default function StudentsPage() {
             };
         });
     };
-    const handlePhotoUpload = (event) => {
+    const uploadProfileImage = useCallback(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await api.post('/erp/media/images/upload', formData, {
+            headers: {
+                'Content-Type': undefined,
+            },
+        });
+
+        const payload = normalizeObject(response.data);
+        const uploadedUrl = String(payload?.url || '').trim();
+        if (!uploadedUrl) {
+            throw new Error('Rasm URL qaytmadi');
+        }
+
+        return uploadedUrl;
+    }, []);
+
+    const handlePhotoUpload = async (event) => {
         const file = event.target.files?.[0];
         if (!file)
             return;
-        const reader = new FileReader();
-        reader.onload = () => {
+
+        setUploadingPhoto(true);
+        setError('');
+
+        try {
+            const uploadedUrl = await uploadProfileImage(file);
             setForm((prev) => ({
                 ...prev,
-                photoUrl: String(reader.result || ''),
+                photoUrl: uploadedUrl,
             }));
-        };
-        reader.readAsDataURL(file);
+        }
+        catch (e) {
+            setError(getApiErrorMessage(e, 'Rasmni yuklashda xatolik'));
+        }
+        finally {
+            setUploadingPhoto(false);
+            event.target.value = '';
+        }
     };
     const openCreate = () => {
         resetForm();
@@ -429,7 +459,7 @@ export default function StudentsPage() {
 
             <div className="flex flex-wrap items-center gap-2">
 
-                <button type="button" onClick={openCreate} className="h-11 px-5 rounded-xl bg-violet-600 text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-violet-700 transition">
+                <button type="button" onClick={openCreate} className="h-11 px-5 rounded-xl bg-emerald-600 text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-emerald-700 transition">
 
                     <Plus size={16} /> Talaba qo'shish
 
@@ -437,7 +467,7 @@ export default function StudentsPage() {
 
 
 
-                <button type="button" className="h-11 px-5 rounded-xl bg-violet-500 text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-violet-600 transition">
+                <button type="button" className="h-11 px-5 rounded-xl bg-amber-500 text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-amber-600 transition">
 
                     <Upload size={16} /> Exceldan ma'lumot qo'shish
 
@@ -597,7 +627,7 @@ export default function StudentsPage() {
 
                             <td colSpan={8} className="py-14 text-center">
 
-                                <Loader2 size={24} className="animate-spin mx-auto text-violet-500" />
+                                <Loader2 size={24} className="animate-spin mx-auto text-emerald-600" />
 
                             </td>
 
@@ -828,9 +858,9 @@ export default function StudentsPage() {
 
                         <div className="grid grid-cols-2 gap-2 rounded-xl bg-[#f4f6fb] p-2 border border-[#eef2f8]">
 
-                            <button type="button" onClick={() => setForm((prev) => ({ ...prev, gender: 'MALE' }))} className={`h-9 rounded-lg text-sm font-medium inline-flex items-center justify-center gap-2 ${form.gender === 'MALE' ? 'bg-white border border-[#dbe2ef] text-violet-600' : 'text-gray-500'}`}>
+                            <button type="button" onClick={() => setForm((prev) => ({ ...prev, gender: 'MALE' }))} className={`h-9 rounded-lg text-sm font-medium inline-flex items-center justify-center gap-2 ${form.gender === 'MALE' ? 'bg-white border border-[#dbe2ef] text-emerald-600' : 'text-gray-500'}`}>
 
-                                <span className={`w-2.5 h-2.5 rounded-full ${form.gender === 'MALE' ? 'bg-violet-500' : 'bg-gray-300'}`} />
+                                <span className={`w-2.5 h-2.5 rounded-full ${form.gender === 'MALE' ? 'bg-emerald-500' : 'bg-gray-300'}`} />
 
                                 Erkak
 
@@ -838,9 +868,9 @@ export default function StudentsPage() {
 
 
 
-                            <button type="button" onClick={() => setForm((prev) => ({ ...prev, gender: 'FEMALE' }))} className={`h-9 rounded-lg text-sm font-medium inline-flex items-center justify-center gap-2 ${form.gender === 'FEMALE' ? 'bg-white border border-[#dbe2ef] text-violet-600' : 'text-gray-500'}`}>
+                            <button type="button" onClick={() => setForm((prev) => ({ ...prev, gender: 'FEMALE' }))} className={`h-9 rounded-lg text-sm font-medium inline-flex items-center justify-center gap-2 ${form.gender === 'FEMALE' ? 'bg-white border border-[#dbe2ef] text-emerald-600' : 'text-gray-500'}`}>
 
-                                <span className={`w-2.5 h-2.5 rounded-full ${form.gender === 'FEMALE' ? 'bg-violet-500' : 'bg-gray-300'}`} />
+                                <span className={`w-2.5 h-2.5 rounded-full ${form.gender === 'FEMALE' ? 'bg-emerald-500' : 'bg-gray-300'}`} />
 
                                 Ayol
 
@@ -877,7 +907,7 @@ export default function StudentsPage() {
 
 
 
-                        <button type="button" onClick={() => setGroupPickerOpen((prev) => !prev)} className="mt-2 text-violet-600 text-sm font-semibold inline-flex items-center gap-1">
+                        <button type="button" onClick={() => setGroupPickerOpen((prev) => !prev)} className="mt-2 text-amber-600 text-sm font-semibold inline-flex items-center gap-1">
 
                             <Plus size={15} /> Qo'shish
 
@@ -895,7 +925,7 @@ export default function StudentsPage() {
 
                                     <span className="text-gray-700">{group.name}</span>
 
-                                    <span className={`w-5 h-5 rounded-md border inline-flex items-center justify-center ${checked ? 'bg-violet-500 border-violet-500 text-white' : 'border-[#dce3f0] text-transparent'}`}>
+                                    <span className={`w-5 h-5 rounded-md border inline-flex items-center justify-center ${checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[#dce3f0] text-transparent'}`}>
 
                                         <Check size={13} />
 
@@ -940,13 +970,21 @@ export default function StudentsPage() {
 
                             <UploadCloud size={22} className="text-gray-400" />
 
-                            <p className="text-sm text-violet-600 font-semibold">Click to upload</p>
+                            <p className="text-sm text-emerald-600 font-semibold">Click to upload</p>
 
                             <p className="text-xs text-gray-400">JPG yoki PNG (max. 800x800px)</p>
 
                             <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
 
                         </label>
+
+                        {uploadingPhoto && (<p className="mt-2 text-xs text-gray-500 inline-flex items-center gap-1.5">
+
+                            <Loader2 size={13} className="animate-spin" />
+
+                            Rasm yuklanmoqda...
+
+                        </p>)}
 
 
 
@@ -972,7 +1010,7 @@ export default function StudentsPage() {
 
 
 
-                    <button type="button" disabled={saving} onClick={saveStudent} className="h-11 px-5 rounded-xl bg-violet-600 text-white text-sm font-semibold inline-flex items-center gap-2 disabled:opacity-70">
+                    <button type="button" disabled={saving} onClick={saveStudent} className="h-11 px-5 rounded-xl bg-emerald-600 text-white text-sm font-semibold inline-flex items-center gap-2 disabled:opacity-70">
 
                         {saving && <Loader2 size={15} className="animate-spin" />}
 

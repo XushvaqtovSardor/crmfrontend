@@ -285,11 +285,11 @@ export default function Layout({ children }) {
 
           </div>
 
-          {sidebarOpen && <span className="text-[33px] font-extrabold italic tracking-tight" style={{ color: '#7e56d8' }}>CRM</span>}
+          {sidebarOpen && <span className="text-[33px] font-extrabold italic tracking-tight" style={{ color: '#198754' }}>CRM</span>}
 
         </div>
 
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden lg:flex w-8 h-8 rounded-xl items-center justify-center transition text-white" style={{ background: '#7f56d9' }}>
+        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden lg:flex w-8 h-8 rounded-xl items-center justify-center transition text-white" style={{ background: '#1f9d63' }}>
 
           {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
 
@@ -315,7 +315,7 @@ export default function Layout({ children }) {
           return (<button key={item.path} onClick={() => { navigate(item.path); setMobileOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${active
             ? 'text-white shadow-lg'
             : 'hover:translate-x-0.5'} ${!sidebarOpen ? 'justify-center' : ''}`} style={active
-              ? { background: 'linear-gradient(135deg, #7e56d8, #8258dd)' }
+              ? { background: 'linear-gradient(135deg, #1f9d63, #f0b429)' }
               : { color: 'var(--text-muted)' }} title={item.name}>
 
             <Icon size={20} className="shrink-0" />
@@ -332,20 +332,6 @@ export default function Layout({ children }) {
 
 
       <div className="relative p-3 border-t" style={{ borderColor: 'var(--border)' }}>
-
-        <div className={`rounded-2xl border p-4 ${!sidebarOpen ? 'hidden' : ''}`} style={{ borderColor: 'var(--border)', background: '#f8fafc' }}>
-
-          <p className="text-lg font-semibold text-gray-800">Obuna</p>
-
-          <p className="text-sm text-red-500 mb-4">Obunangiz tugagan</p>
-
-          <button className="w-full h-11 rounded-xl text-white font-semibold" style={{ background: '#ff374f' }}>
-
-            Obunani yangilash
-
-          </button>
-
-        </div>
 
         <button onClick={handleLogout} className={`mt-2 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50 transition ${!sidebarOpen ? 'justify-center' : ''}`}>
 
@@ -399,7 +385,7 @@ export default function Layout({ children }) {
                 const ActionIcon = action.icon;
                 return (<button key={action.path} type="button" onClick={() => handleQuickAction(action.path)} className="w-full px-3 py-2 text-sm text-gray-700 hover:bg-[#f7f8fc] inline-flex items-center gap-2">
 
-                  <ActionIcon size={16} className="text-violet-500" />
+                  <ActionIcon size={16} className="text-emerald-600" />
 
                   {action.label}
 
