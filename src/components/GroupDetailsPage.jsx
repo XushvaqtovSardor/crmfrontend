@@ -42,11 +42,42 @@ const WEEKDAY_INDEX = {
     SUNDAY: 6,
 };
 const GROUP_TABS = ['attendance', 'coin', 'history'];
+const STUDENT_STATUS_FILTERS = [
+    { key: 'ALL', label: 'Barchasi' },
+    { key: 'ACTIVE', label: 'Faol' },
+    { key: 'FREEZE', label: 'Freeze' },
+    { key: 'INACTIVE', label: 'Nofaol' },
+];
+const STUDENT_STATUS_META = {
+    ACTIVE: {
+        label: 'Faol',
+        badgeClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        textClassName: 'text-emerald-600',
+    },
+    FREEZE: {
+        label: 'Freeze',
+        badgeClassName: 'border-sky-200 bg-sky-50 text-sky-700',
+        textClassName: 'text-sky-600',
+    },
+    INACTIVE: {
+        label: 'Nofaol',
+        badgeClassName: 'border-amber-200 bg-amber-50 text-amber-700',
+        textClassName: 'text-amber-600',
+    },
+};
 function normalizeGroupTab(value) {
     const normalized = String(value || '').trim().toLowerCase();
     if (GROUP_TABS.includes(normalized))
         return normalized;
     return 'attendance';
+}
+function normalizeStudentStatus(value) {
+    const normalized = String(value || '').trim().toUpperCase();
+    if (normalized === 'FREEZE')
+        return 'FREEZE';
+    if (normalized === 'INACTIVE')
+        return 'INACTIVE';
+    return 'ACTIVE';
 }
 function normalizeList(payload) {
     if (Array.isArray(payload?.data?.data?.data))
@@ -218,6 +249,7 @@ export default function GroupDetailsPage() {
         teacher: true,
         students: true,
     });
+    const [studentStatusFilter, setStudentStatusFilter] = useState('ALL');
     const openTab = useCallback((tabName) => {
         const nextTab = normalizeGroupTab(tabName);
         setActiveTab(nextTab);
@@ -227,7 +259,32 @@ export default function GroupDetailsPage() {
     }, [searchParams, setSearchParams]);
     const attendanceColumns = useMemo(() => buildAttendanceColumns(focusDate, group?.weekDays || []), [focusDate, group?.weekDays]);
     const monthLabel = useMemo(() => focusDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long' }), [focusDate]);
-    const groupStudents = useMemo(() => (group?.studentGroup || []).map((membership) => membership.student).filter(Boolean), [group]);
+    const groupStudentMemberships = useMemo(() => {
+        return (group?.studentGroup || [])
+            .filter((membership) => Boolean(membership?.student))
+            .map((membership) => ({
+                ...membership,
+                studentStatus: normalizeStudentStatus(membership.student?.status),
+            }));
+    }, [group]);
+    const groupStudents = useMemo(() => groupStudentMemberships.map((membership) => membership.student).filter(Boolean), [groupStudentMemberships]);
+    const studentStatusCounts = useMemo(() => {
+        const counts = {
+            ALL: groupStudentMemberships.length,
+            ACTIVE: 0,
+            FREEZE: 0,
+            INACTIVE: 0,
+        };
+        groupStudentMemberships.forEach((membership) => {
+            counts[membership.studentStatus] += 1;
+        });
+        return counts;
+    }, [groupStudentMemberships]);
+    const filteredGroupStudentMemberships = useMemo(() => {
+        if (studentStatusFilter === 'ALL')
+            return groupStudentMemberships;
+        return groupStudentMemberships.filter((membership) => membership.studentStatus === studentStatusFilter);
+    }, [groupStudentMemberships, studentStatusFilter]);
     const availableStudents = useMemo(() => {
         const assignedIds = new Set(groupStudents.map((student) => Number(student.id)));
         return students.filter((student) => {
@@ -774,35 +831,56 @@ export default function GroupDetailsPage() {
 
                 <SidebarSection title="Talabalar" open={openSections.students} onToggle={() => toggleSection('students')}>
 
+                    <div className="mb-2 flex flex-wrap gap-2">
+
+                        {STUDENT_STATUS_FILTERS.map((item) => {
+                            const isActiveFilter = studentStatusFilter === item.key;
+                            const count = studentStatusCounts[item.key] || 0;
+
+                            return (<button key={item.key} type="button" onClick={() => setStudentStatusFilter(item.key)} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition ${isActiveFilter
+                                ? 'border-violet-300 bg-violet-50 text-violet-700'
+                                : 'border-[#e1e7f2] bg-white text-gray-500 hover:border-violet-200 hover:text-violet-600'}`}>
+
+                                <span>{item.label}</span>
+                                <span className="rounded-full bg-white/80 px-1.5 py-0.5 text-[10px]">{count}</span>
+
+                            </button>);
+                        })}
+
+                    </div>
+
                     <div className="space-y-2 max-h-107.5 overflow-auto pr-1">
 
-                        {group.studentGroup?.length > 0 ? (group.studentGroup.map((membership) => (<div key={membership.id} className="rounded-xl border border-[#e6ebf6] bg-white px-3 py-2 flex items-center justify-between">
+                        {filteredGroupStudentMemberships.length > 0 ? (filteredGroupStudentMemberships.map((membership) => {
+                            const statusMeta = STUDENT_STATUS_META[membership.studentStatus] || STUDENT_STATUS_META.ACTIVE;
+                            return (<div key={membership.id} className="rounded-xl border border-[#e6ebf6] bg-white px-3 py-2 flex items-center justify-between">
 
-                            <div>
+                                <div>
 
-                                <p className="text-sm font-semibold text-gray-900">{membership.student?.fullName || '--'}</p>
+                                    <p className="text-sm font-semibold text-gray-900">{membership.student?.fullName || '--'}</p>
 
-                                <p className="text-xs text-gray-500">{membership.student?.email || '--'}</p>
+                                    <p className="text-xs text-gray-500">{membership.student?.email || '--'}</p>
 
-                            </div>
+                                </div>
 
 
 
-                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2">
 
-                                <span className="text-xs text-emerald-600 font-semibold">Faol</span>
+                                    <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${statusMeta.badgeClassName}`}>{statusMeta.label}</span>
 
-                                <button type="button" onClick={() => removeStudentFromGroup(membership.studentId, membership.student?.fullName)} disabled={studentRemovingId === Number(membership.studentId)} title="Talabani guruhdan chiqarish" className="w-8 h-8 rounded-lg border border-red-100 text-red-500 hover:bg-red-50 inline-flex items-center justify-center disabled:opacity-60">
+                                    <button type="button" onClick={() => removeStudentFromGroup(membership.studentId, membership.student?.fullName)} disabled={studentRemovingId === Number(membership.studentId)} title="Talabani guruhdan chiqarish" className="w-8 h-8 rounded-lg border border-red-100 text-red-500 hover:bg-red-50 inline-flex items-center justify-center disabled:opacity-60">
 
-                                    {studentRemovingId === Number(membership.studentId)
-                                        ? <Loader2 size={14} className="animate-spin" />
-                                        : <X size={14} />}
+                                        {studentRemovingId === Number(membership.studentId)
+                                            ? <Loader2 size={14} className="animate-spin" />
+                                            : <X size={14} />}
 
-                                </button>
+                                    </button>
 
-                            </div>
+                                </div>
 
-                        </div>))) : (<p className="text-sm text-gray-400">Hozircha talaba biriktirilmagan</p>)}
+                            </div>);
+                        })) : (<p className="text-sm text-gray-400">Tanlangan toifada talaba topilmadi</p>)}
 
                     </div>
 
@@ -965,19 +1043,27 @@ export default function GroupDetailsPage() {
 
                                         <div className="flex items-center gap-3">
 
-                                            <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-700 inline-flex items-center justify-center font-semibold text-sm">
+                                            {(() => {
+                                                const studentStatus = normalizeStudentStatus(student.status);
+                                                const statusMeta = STUDENT_STATUS_META[studentStatus] || STUDENT_STATUS_META.ACTIVE;
+                                                return (<>
 
-                                                {String(student.fullName || 'S').charAt(0).toUpperCase()}
+                                                    <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-700 inline-flex items-center justify-center font-semibold text-sm">
 
-                                            </div>
+                                                        {String(student.fullName || 'S').charAt(0).toUpperCase()}
 
-                                            <div>
+                                                    </div>
 
-                                                <p className="text-[28px] leading-tight font-medium text-[#27314f]">{student.fullName}</p>
+                                                    <div>
 
-                                                <p className="text-sm text-gray-500">Active</p>
+                                                        <p className="text-[28px] leading-tight font-medium text-[#27314f]">{student.fullName}</p>
 
-                                            </div>
+                                                        <p className={`text-sm ${statusMeta.textClassName}`}>{statusMeta.label}</p>
+
+                                                    </div>
+
+                                                </>);
+                                            })()}
 
                                         </div>
 
@@ -991,7 +1077,7 @@ export default function GroupDetailsPage() {
                                         const requestKey = `${column.key}:${student.id}`;
                                         const isBusy = attendanceSavingKey === requestKey;
                                         const resetKey = `${column.key}:${student.id}:reset`;
-                                        const isFreeze = String(student.status || '').toUpperCase() === 'FREEZE';
+                                        const isFreeze = normalizeStudentStatus(student.status) === 'FREEZE';
                                         return (<td key={`${student.id}-${column.key}`} className="py-3 px-3 border-l border-[#eef2f8]">
 
                                             {attendanceLoading && !row ? (<div className="flex justify-center">
@@ -1149,19 +1235,27 @@ export default function GroupDetailsPage() {
 
                                         <div className="flex items-center gap-3">
 
-                                            <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-700 inline-flex items-center justify-center font-semibold text-sm">
+                                            {(() => {
+                                                const studentStatus = normalizeStudentStatus(student.status);
+                                                const statusMeta = STUDENT_STATUS_META[studentStatus] || STUDENT_STATUS_META.ACTIVE;
+                                                return (<>
 
-                                                {String(student.fullName || 'S').charAt(0).toUpperCase()}
+                                                    <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-700 inline-flex items-center justify-center font-semibold text-sm">
 
-                                            </div>
+                                                        {String(student.fullName || 'S').charAt(0).toUpperCase()}
 
-                                            <div>
+                                                    </div>
 
-                                                <p className="text-3xl leading-tight font-medium text-[#27314f]">{student.fullName}</p>
+                                                    <div>
 
-                                                <p className="text-sm text-gray-500">Active</p>
+                                                        <p className="text-3xl leading-tight font-medium text-[#27314f]">{student.fullName}</p>
 
-                                            </div>
+                                                        <p className={`text-sm ${statusMeta.textClassName}`}>{statusMeta.label}</p>
+
+                                                    </div>
+
+                                                </>);
+                                            })()}
 
                                         </div>
 

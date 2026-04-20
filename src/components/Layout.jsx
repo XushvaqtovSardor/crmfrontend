@@ -1,8 +1,48 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Home, Users, GraduationCap, Layers3, BookOpen, DoorOpen, Wallet, Gift, Settings, Bell, Moon, Sun, Search, LogOut, Menu, X, ChevronDown, CalendarDays, Plus, ChevronLeft, ChevronRight, PlayCircle, CreditCard, BarChart3, Trophy, ShoppingBag, } from 'lucide-react';
+import { Home, Users, GraduationCap, Layers3, BookOpen, DoorOpen, Wallet, Gift, Settings, Bell, Moon, Sun, Search, LogOut, Menu, X, ChevronDown, CalendarDays, Plus, ChevronLeft, ChevronRight, PlayCircle, CreditCard, BarChart3, Trophy, ShoppingBag, User } from 'lucide-react';
 import { useAuth } from '../AuthContext.jsx';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { normalizeRole } from '../utils/roles.js';
+
+const API_ORIGIN = String(import.meta.env.VITE_API_URL || '')
+  .trim()
+  .replace(/\/api\/v1\/?$/i, '')
+  .replace(/\/$/, '');
+
+function parsePhotoValue(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return '';
+  }
+
+  if (raw.startsWith('{') || raw.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(raw);
+      const parsedPhoto = String(parsed?.photoUrl || '').trim();
+      if (parsedPhoto) {
+        return parsedPhoto;
+      }
+    } catch {
+      return raw;
+    }
+  }
+
+  return raw;
+}
+
+function resolveImageUrl(value) {
+  const photo = parsePhotoValue(value);
+  if (!photo) {
+    return '';
+  }
+
+  if (/^(https?:)?\/\//i.test(photo) || photo.startsWith('data:')) {
+    return photo;
+  }
+
+  const normalizedPath = photo.startsWith('/') ? photo : `/${photo}`;
+  return API_ORIGIN ? `${API_ORIGIN}${normalizedPath}` : normalizedPath;
+}
 const SIDEBAR_ITEMS = {
   SUPERADMIN: [
     { name: 'Asosiy', icon: Home, path: '/dashboard' },
@@ -117,6 +157,8 @@ export default function Layout({ children }) {
   });
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const quickActionsRef = useRef(null);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
   const [selectedCenter, setSelectedCenter] = useState(() => {
     if (typeof window === 'undefined') {
       return CENTER_OPTIONS[0];
@@ -185,6 +227,7 @@ export default function Layout({ children }) {
       }
       setMobileOpen(false);
       setQuickActionsOpen(false);
+      setProfileMenuOpen(false);
     };
 
     document.addEventListener('keydown', handleEscape);
@@ -219,8 +262,26 @@ export default function Layout({ children }) {
   }, [quickActionsOpen]);
 
   useEffect(() => {
+    if (!profileMenuOpen) {
+      return undefined;
+    }
+
+    const handleOutsideClick = (event) => {
+      if (!profileMenuRef.current?.contains(event.target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [profileMenuOpen]);
+
+  useEffect(() => {
     setQuickActionsOpen(false);
     setMobileOpen(false);
+    setProfileMenuOpen(false);
   }, [location.pathname]);
 
   const handleLogout = () => {
@@ -232,6 +293,15 @@ export default function Layout({ children }) {
     setQuickActionsOpen(false);
     navigate(path);
   };
+
+  const handleProfileMenuNavigate = (path) => {
+    setProfileMenuOpen(false);
+    navigate(path);
+  };
+
+  const userPhotoUrl = resolveImageUrl(user?.photo);
+  const userRoleLabel = String(normalizedRole || user?.role || 'USER').toUpperCase();
+  const userPhoneLabel = String(user?.phone || '').trim() || 'Telefon kiritilmagan';
 
   if (normalizedRole === 'STUDENT') {
     return (
@@ -441,10 +511,71 @@ export default function Layout({ children }) {
 
           </button>
 
-          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-strong))' }}>
+          <div className="relative" ref={profileMenuRef}>
+            <button
+              type="button"
+              onClick={() => setProfileMenuOpen((prev) => !prev)}
+              className="h-10 w-10 rounded-full overflow-hidden border border-white/70 shadow-sm bg-white inline-flex items-center justify-center"
+              title="Profil menyusi"
+            >
+              {userPhotoUrl ? (
+                <img src={userPhotoUrl} alt={user?.fullName || 'User'} className="h-full w-full object-cover" />
+              ) : (
+                <span className="h-full w-full inline-flex items-center justify-center text-white font-semibold" style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-strong))' }}>
+                  {user?.fullName?.charAt(0) || 'U'}
+                </span>
+              )}
+            </button>
 
-            {user?.fullName?.charAt(0) || 'U'}
+            {profileMenuOpen && (
+              <div className="absolute right-0 top-12 z-50 w-72 rounded-2xl border border-[#e2e8f4] bg-white shadow-xl overflow-hidden">
+                <div className="px-4 py-4 border-b border-[#edf1f7]">
+                  <p className="text-3xl font-semibold text-slate-900 leading-tight">{user?.fullName || 'Foydalanuvchi'}</p>
+                  <p className="mt-1 text-sm text-slate-500">{userPhoneLabel}</p>
+                  <p className="mt-1 text-sm font-semibold text-violet-600">{userRoleLabel}</p>
+                </div>
 
+                <div className="py-1">
+                  <button
+                    type="button"
+                    onClick={() => handleProfileMenuNavigate('/profile')}
+                    className="w-full px-4 py-2.5 text-left text-[15px] text-slate-700 hover:bg-[#f8fafc] inline-flex items-center gap-2"
+                  >
+                    <User size={17} className="text-slate-500" />
+                    Profil
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleProfileMenuNavigate('/settings')}
+                    className="w-full px-4 py-2.5 text-left text-[15px] text-slate-700 hover:bg-[#f8fafc] inline-flex items-center gap-2"
+                  >
+                    <Settings size={17} className="text-slate-500" />
+                    Sozlamalar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleProfileMenuNavigate('/billing-plans')}
+                    className="w-full px-4 py-2.5 text-left text-[15px] text-slate-700 hover:bg-[#f8fafc] inline-flex items-center gap-2"
+                  >
+                    <CreditCard size={17} className="text-slate-500" />
+                    To'lov rejasi
+                  </button>
+                </div>
+
+                <div className="border-t border-[#edf1f7] py-1">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2.5 text-left text-[15px] text-red-600 hover:bg-red-50 inline-flex items-center gap-2"
+                  >
+                    <LogOut size={17} />
+                    Chiqish
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>

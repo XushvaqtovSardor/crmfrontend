@@ -38,11 +38,36 @@ const DAY_LABELS = {
   SUNDAY: 'Ya',
 };
 
+const API_ORIGIN = String(import.meta.env.VITE_API_URL || '')
+  .trim()
+  .replace(/\/api\/v1\/?$/i, '')
+  .replace(/\/$/, '');
+
 function normalizeList(payload) {
   if (Array.isArray(payload?.data?.data?.data)) return payload.data.data.data;
   if (Array.isArray(payload?.data?.data)) return payload.data.data;
   if (Array.isArray(payload?.data)) return payload.data;
   return [];
+}
+
+function normalizeStatus(value) {
+  const normalized = String(value || '').trim().toUpperCase();
+  if (normalized === 'FREEZE') return 'FREEZE';
+  if (normalized === 'INACTIVE') return 'INACTIVE';
+  return 'ACTIVE';
+}
+
+function resolvePhotoUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^(https?:)?\/\//i.test(raw) || raw.startsWith('data:')) return raw;
+  const normalizedPath = raw.startsWith('/') ? raw : `/${raw}`;
+  return API_ORIGIN ? `${API_ORIGIN}${normalizedPath}` : normalizedPath;
+}
+
+function initialLetter(value, fallback = 'U') {
+  const text = String(value || '').trim();
+  return text ? text.charAt(0).toUpperCase() : fallback;
 }
 
 function getStudentCount(group) {
@@ -305,6 +330,32 @@ export default function GroupsPage() {
     [groups],
   );
 
+  const activeTeachers = useMemo(
+    () => teachers.filter((teacher) => normalizeStatus(teacher?.status) !== 'INACTIVE'),
+    [teachers],
+  );
+
+  const previewTeachers = useMemo(
+    () => activeTeachers.slice(0, 3),
+    [activeTeachers],
+  );
+
+  const hiddenTeachersCount = Math.max(activeTeachers.length - previewTeachers.length, 0);
+
+  const studentStatusSummary = useMemo(() => {
+    const summary = {
+      ACTIVE: 0,
+      FREEZE: 0,
+      INACTIVE: 0,
+    };
+
+    students.forEach((student) => {
+      summary[normalizeStatus(student?.status)] += 1;
+    });
+
+    return summary;
+  }, [students]);
+
   const availableStudents = useMemo(() => {
     if (!selectedGroup) return [];
 
@@ -379,7 +430,42 @@ export default function GroupsPage() {
             <MoreHorizontal size={16} className="text-gray-400" />
           </div>
           <p className="text-gray-500 text-sm">O'qituvchilar</p>
-          <p className="text-4xl font-bold text-gray-900 mt-2">{teachers.length}</p>
+          <p className="text-4xl font-bold text-gray-900 mt-2">{activeTeachers.length}</p>
+
+          <button
+            type="button"
+            onClick={() => navigate('/teachers')}
+            className="mt-4 w-full rounded-xl border border-[#e5e9f3] bg-[#fafbff] px-3 py-2 inline-flex items-center justify-between gap-3 hover:bg-white transition"
+            title="Barcha o'qituvchilar ro'yxatini ochish"
+          >
+            <div className="flex items-center -space-x-2">
+              {previewTeachers.length > 0 ? previewTeachers.map((teacher) => {
+                const photoUrl = resolvePhotoUrl(teacher?.photo);
+                return (
+                  <span
+                    key={`teacher-preview-${teacher.id}`}
+                    className="inline-flex h-8 w-8 overflow-hidden rounded-full border-2 border-white bg-slate-100 text-[11px] font-semibold text-slate-700 items-center justify-center"
+                  >
+                    {photoUrl ? (
+                      <img src={photoUrl} alt={teacher.fullName || 'Teacher'} className="h-full w-full object-cover" />
+                    ) : (
+                      initialLetter(teacher?.fullName, 'T')
+                    )}
+                  </span>
+                );
+              }) : (
+                <span className="inline-flex h-8 w-8 rounded-full border-2 border-white bg-slate-100 text-[11px] font-semibold text-slate-600 items-center justify-center">0</span>
+              )}
+
+              {hiddenTeachersCount > 0 && (
+                <span className="inline-flex h-8 min-w-8 px-2 rounded-full border-2 border-white bg-[#ede9fe] text-[11px] font-semibold text-violet-700 items-center justify-center">
+                  +{hiddenTeachersCount}
+                </span>
+              )}
+            </div>
+
+            <span className="text-xs font-semibold text-violet-600 whitespace-nowrap">Ro'yxatni ochish</span>
+          </button>
         </div>
         <div className="bg-white rounded-2xl border border-[#e3e7f1] p-5">
           <div className="mb-3 flex items-center justify-between">
@@ -388,6 +474,18 @@ export default function GroupsPage() {
           </div>
           <p className="text-gray-500 text-sm">O'quvchilar</p>
           <p className="text-4xl font-bold text-gray-900 mt-2">{studentsCount}</p>
+
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-emerald-700">
+              Faol {studentStatusSummary.ACTIVE}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-sky-700">
+              Freeze {studentStatusSummary.FREEZE}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-700">
+              Nofaol {studentStatusSummary.INACTIVE}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -493,12 +591,21 @@ export default function GroupsPage() {
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-700">{group.room?.name || '--'}</td>
                       <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-2 rounded-full border border-[#dfe4ef] px-2.5 py-1 text-xs text-gray-700">
-                          <span className="w-4 h-4 rounded-full bg-gray-200 text-gray-700 inline-flex items-center justify-center text-[10px]">
-                            {group.teacher?.fullName?.charAt(0) || 'T'}
-                          </span>
-                          {group.teacher?.fullName || '--'}
-                        </span>
+                        {(() => {
+                          const teacherPhotoUrl = resolvePhotoUrl(group.teacher?.photo);
+                          return (
+                            <span className="inline-flex items-center gap-2 rounded-full border border-[#dfe4ef] px-2.5 py-1 text-xs text-gray-700">
+                              <span className="w-4 h-4 rounded-full bg-gray-200 text-gray-700 inline-flex items-center justify-center text-[10px] overflow-hidden">
+                                {teacherPhotoUrl ? (
+                                  <img src={teacherPhotoUrl} alt={group.teacher?.fullName || 'Teacher'} className="w-full h-full object-cover" />
+                                ) : (
+                                  initialLetter(group.teacher?.fullName, 'T')
+                                )}
+                              </span>
+                              {group.teacher?.fullName || '--'}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="py-3 px-4 text-sm font-semibold text-gray-700">{rowStudents}</td>
                       <td className="py-3 px-4">

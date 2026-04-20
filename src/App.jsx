@@ -21,7 +21,9 @@ const RoomsPage = lazy(() => import('./components/RoomsPage.jsx'));
 const FinancePage = lazy(() => import('./components/FinancePage.jsx'));
 const HomeworksPage = lazy(() => import('./components/HomeworksPage.jsx'));
 const ProgressPage = lazy(() => import('./components/ProgressPage.jsx'));
-const SettingsPage = lazy(() => import('./components/SettingsPage.jsx'));
+const ProfilePage = lazy(() => import('./components/ProfilePage.jsx'));
+const SettingsPage = lazy(() => import('./components/SystemSettingsPage.jsx'));
+const BillingPlansPage = lazy(() => import('./components/BillingPlansPage.jsx'));
 const ManagementPage = lazy(() => import('./components/ManagementPage.jsx'));
 const MyGroupsPage = lazy(() => import('./components/MyGroupsPage.jsx'));
 const LessonsPage = lazy(() => import('./components/LessonsPage.jsx'));
@@ -59,6 +61,17 @@ function DashboardRouter() {
     case 'STUDENT': return <StudentDashboard />;
     default: return <Navigate to="/unauthorized" />;
   }
+}
+
+function SettingsRouter() {
+  const { user } = useAuth();
+  const role = normalizeRole(user?.role);
+
+  if (role === 'TEACHER' || role === 'STUDENT') {
+    return <ProfilePage />;
+  }
+
+  return <SettingsPage />;
 }
 
 function AuthenticatedLayout({ children, allowedRoles }) {
@@ -211,9 +224,19 @@ function App() {
                 <ProgressPage />
               </AuthenticatedLayout>
             } />
+            <Route path="/profile" element={
+              <AuthenticatedLayout>
+                <ProfilePage />
+              </AuthenticatedLayout>
+            } />
             <Route path="/settings" element={
               <AuthenticatedLayout>
-                <SettingsPage />
+                <SettingsRouter />
+              </AuthenticatedLayout>
+            } />
+            <Route path="/billing-plans" element={
+              <AuthenticatedLayout>
+                <BillingPlansPage />
               </AuthenticatedLayout>
             } />
 

@@ -580,19 +580,6 @@ export default function FinancePage() {
         setExpenseFormError('');
     };
 
-    const clearPaymentFilters = () => {
-        setPaymentFromDate('');
-        setPaymentToDate('');
-        setPaymentQuery('');
-        setPaymentMonth('');
-        setPaymentGroup('');
-        setPaymentCourse('');
-        setPaymentTeacher('');
-        setPaymentStaff('');
-        setPaymentMethod('');
-        setPagination(1, limit);
-    };
-
     const clearDebtorFilters = () => {
         setDebtorQuery('');
         setDebtorGroup('');
@@ -668,11 +655,11 @@ export default function FinancePage() {
         if (activeTab === 'debtor') {
             return (
                 <div className="space-y-3">
-                    <div className="rounded-2xl border border-[#e6ebf5] bg-white p-6">
+                    <div className="rounded-2xl border border-[#e2e8f3] bg-[#f4f7fc] px-6 py-5 shadow-[0_6px_20px_rgba(15,23,42,0.04)]">
                         <p className="text-3xl font-medium text-slate-800">Jami qarz</p>
                         <p className="mt-2 text-5xl font-semibold text-red-600">{toCurrency(debtorTotals.total)}</p>
                     </div>
-                    <div className="rounded-2xl border border-[#e6ebf5] bg-white p-6">
+                    <div className="rounded-2xl border border-[#e2e8f3] bg-[#f4f7fc] px-6 py-5 shadow-[0_6px_20px_rgba(15,23,42,0.04)]">
                         <p className="text-3xl font-medium text-slate-800">Filter bo'yicha jami</p>
                         <p className="mt-2 text-5xl font-semibold text-red-600">{toCurrency(debtorTotals.filtered)}</p>
                     </div>
@@ -683,11 +670,11 @@ export default function FinancePage() {
         if (activeTab === 'expenses') {
             return (
                 <div className="space-y-3">
-                    <div className="rounded-2xl border border-[#e6ebf5] bg-white p-6">
+                    <div className="rounded-2xl border border-[#e2e8f3] bg-[#f4f7fc] px-6 py-5 shadow-[0_6px_20px_rgba(15,23,42,0.04)]">
                         <p className="text-3xl font-medium text-slate-800">Umumiy xarajat</p>
                         <p className="mt-2 text-5xl font-semibold text-slate-900">{toCurrency(expenseTotals.total)}</p>
                     </div>
-                    <div className="rounded-2xl border border-[#e6ebf5] bg-white p-6">
+                    <div className="rounded-2xl border border-[#e2e8f3] bg-[#f4f7fc] px-6 py-5 shadow-[0_6px_20px_rgba(15,23,42,0.04)]">
                         <p className="text-3xl font-medium text-slate-800">Filter bo'yicha umumiy xarajat</p>
                         <p className="mt-2 text-5xl font-semibold text-slate-900">{toCurrency(expenseTotals.filtered)}</p>
                     </div>
@@ -697,11 +684,11 @@ export default function FinancePage() {
 
         return (
             <div className="space-y-3">
-                <div className="rounded-2xl border border-[#e6ebf5] bg-white p-6">
+                <div className="rounded-2xl border border-[#e2e8f3] bg-[#f4f7fc] px-6 py-5 shadow-[0_6px_20px_rgba(15,23,42,0.04)]">
                     <p className="text-3xl font-medium text-slate-800">Umumiy daromad</p>
                     <p className="mt-2 text-5xl font-semibold text-teal-600">{toCurrency(paymentTotals.total)}</p>
                 </div>
-                <div className="rounded-2xl border border-[#e6ebf5] bg-white p-6">
+                <div className="rounded-2xl border border-[#e2e8f3] bg-[#f4f7fc] px-6 py-5 shadow-[0_6px_20px_rgba(15,23,42,0.04)]">
                     <p className="text-3xl font-medium text-slate-800">Filter bo'yicha</p>
                     <p className="mt-2 text-5xl font-semibold text-teal-600">{toCurrency(paymentTotals.filtered)}</p>
                 </div>
@@ -710,7 +697,7 @@ export default function FinancePage() {
     };
 
     const renderChart = () => (
-        <div className="rounded-2xl border border-[#e6ebf5] bg-white p-2 overflow-x-auto">
+        <div className="rounded-2xl border border-[#e2e8f3] bg-[#f7fafc] p-3 overflow-x-auto">
             <svg viewBox={`0 0 ${chartModel.width} ${chartModel.height + 36}`} className="w-full" style={{ minWidth: '720px' }}>
                 {chartModel.ticks.map((tick) => (
                     <g key={String(tick.value)}>
@@ -775,17 +762,19 @@ export default function FinancePage() {
             {loading && loadingBlock}
 
             {!loading && activeTab !== 'paymentMethods' && (
-                <section className="rounded-2xl border border-[#e2e8f4] bg-white p-3">
-                    <div className="grid grid-cols-1 xl:grid-cols-[300px,1fr] gap-4 items-stretch">
-                        {renderStatsCards()}
-                        {renderChart()}
+                <section className="rounded-2xl border border-[#e2e8f4] bg-white p-4">
+                    <div className="rounded-2xl border border-[#e6ebf5] bg-[#f7f9fc] p-3">
+                        <div className="grid grid-cols-1 xl:grid-cols-[320px,1fr] gap-4 items-stretch">
+                            {renderStatsCards()}
+                            {renderChart()}
+                        </div>
                     </div>
                 </section>
             )}
 
             {!loading && activeTab === 'payments' && (
                 <>
-                    <section className="rounded-2xl border border-[#e2e8f4] bg-white p-4 space-y-3">
+                    <section className="rounded-2xl border border-[#e2e8f4] bg-[#f5f7fc] p-4 space-y-3">
                         <h2 className="text-4xl font-semibold text-slate-900">To'lovlar Filtrlari</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
@@ -806,13 +795,16 @@ export default function FinancePage() {
                                 />
                             </FilterField>
                             <FilterField label="To'liq ism" icon={Search}>
-                                <input
-                                    type="text"
-                                    value={paymentQuery}
-                                    onChange={(event) => setPaymentQuery(event.target.value)}
-                                    placeholder="Ism yoki telefon raqam bo'yicha qidirish"
-                                    className="h-10 w-full rounded-xl border border-[#dfe4ef] bg-white px-3 text-sm"
-                                />
+                                <div className="relative">
+                                    <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        value={paymentQuery}
+                                        onChange={(event) => setPaymentQuery(event.target.value)}
+                                        placeholder="Ism yoki telefon raqam bo'yicha qidirish"
+                                        className="h-10 w-full rounded-xl border border-[#dfe4ef] bg-white pl-9 pr-3 text-sm"
+                                    />
+                                </div>
                             </FilterField>
                             <FilterField label="To'lov qilingan oy" icon={Calendar}>
                                 <select
@@ -826,7 +818,9 @@ export default function FinancePage() {
                                     ))}
                                 </select>
                             </FilterField>
+                        </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2">
                             <FilterField label="Guruh" icon={Users}>
                                 <select
                                     value={paymentGroup}
@@ -875,34 +869,22 @@ export default function FinancePage() {
                                     ))}
                                 </select>
                             </FilterField>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-                            <div className="w-full sm:max-w-xs">
-                                <FilterField label="To'lov turi" icon={CreditCard}>
-                                    <select
-                                        value={paymentMethod}
-                                        onChange={(event) => setPaymentMethod(event.target.value)}
-                                        className="h-10 w-full rounded-xl border border-[#dfe4ef] bg-white px-3 text-sm"
-                                    >
-                                        <option value="">Barcha to'lov turlari</option>
-                                        {paymentFilters.methods.map((item) => (
-                                            <option key={item} value={item}>{item}</option>
-                                        ))}
-                                    </select>
-                                </FilterField>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={clearPaymentFilters}
-                                className="h-10 rounded-xl border border-[#dfe4ef] bg-white px-4 text-sm font-semibold text-slate-700"
-                            >
-                                Filtrlarni tozalash
-                            </button>
+                            <FilterField label="To'lov turi" icon={CreditCard}>
+                                <select
+                                    value={paymentMethod}
+                                    onChange={(event) => setPaymentMethod(event.target.value)}
+                                    className="h-10 w-full rounded-xl border border-[#dfe4ef] bg-white px-3 text-sm"
+                                >
+                                    <option value="">Barcha to'lov turlari</option>
+                                    {paymentFilters.methods.map((item) => (
+                                        <option key={item} value={item}>{item}</option>
+                                    ))}
+                                </select>
+                            </FilterField>
                         </div>
                     </section>
 
-                    <section className="rounded-2xl border border-[#e2e8f4] bg-white p-4">
+                    <section className="rounded-2xl border border-[#e2e8f4] bg-[#f5f7fc] p-4">
                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                             <h2 className="text-4xl font-semibold text-slate-900">To'lovlar</h2>
                             <p className="text-sm text-slate-500">Jami: {filteredPayments.length} ta | Sahifa: {currentPage}/{totalPages}</p>
