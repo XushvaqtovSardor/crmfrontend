@@ -380,6 +380,30 @@ export default function LessonsPage() {
     };
   }, []);
 
+  const uploadHomeworkFile = useCallback(async (file) => {
+    if (!file) return null;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await api.post('/erp/teacher/homeworks/upload', formData, {
+      headers: {
+        'Content-Type': undefined,
+      },
+    });
+
+    const payload = normalizeObject(res.data);
+    const uploadedLink = String(payload?.url || '').trim();
+    if (!uploadedLink) {
+      throw new Error('Fayl yuklandi, lekin URL olinmadi');
+    }
+
+    return {
+      fileName: String(payload?.fileName || file.name || '').trim(),
+      link: uploadedLink,
+    };
+  }, []);
+
   useEffect(() => {
     if (searchParams.get('create') !== '1') return;
     if (loadingGroups || loadingGroupDetail) return;
@@ -554,12 +578,29 @@ export default function LessonsPage() {
     homeworkInputRef.current?.click();
   };
 
-  const onHomeworkFileSelected = (file) => {
+  const onHomeworkFileSelected = async (file) => {
     if (!file) return;
-    setHomeworkForm((prev) => ({
-      ...prev,
-      fileName: file.name,
-    }));
+
+    setUploadingMedia(true);
+    setError('');
+
+    try {
+      const uploaded = await uploadHomeworkFile(file);
+      if (!uploaded) return;
+
+      setHomeworkForm((prev) => ({
+        ...prev,
+        fileName: uploaded.fileName,
+        link: uploaded.link,
+      }));
+    } catch (e) {
+      setError(getApiErrorMessage(e, 'Homework faylini serverga yuklashda xatolik'));
+    } finally {
+      setUploadingMedia(false);
+      if (homeworkInputRef.current) {
+        homeworkInputRef.current.value = '';
+      }
+    }
   };
 
   const primaryButtonLabel = activeTab === 'lessons'
@@ -1081,6 +1122,7 @@ export default function LessonsPage() {
                   <button
                     type="button"
                     onClick={pickHomeworkFile}
+                    disabled={uploadingMedia}
                     className="h-10 rounded-xl border border-[#dfe4ef] bg-white px-3 text-sm font-semibold text-gray-700"
                   >
                     Fayl tanlash
@@ -1088,11 +1130,18 @@ export default function LessonsPage() {
                   <input
                     ref={homeworkInputRef}
                     type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z,.jpg,.jpeg,.png,video/*"
                     className="hidden"
                     onChange={(event) => onHomeworkFileSelected(event.target.files?.[0])}
                   />
                   <span className="text-xs text-gray-500">{homeworkForm.fileName || 'Tanlanmagan'}</span>
                 </div>
+                {uploadingMedia && (
+                  <div className="mt-2 rounded-xl border border-[#e1e7f2] bg-[#f8fafe] px-3 py-2 text-xs text-gray-600 inline-flex items-center gap-2">
+                    <Loader2 size={14} className="animate-spin" />
+                    Homework fayli yuklanmoqda...
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1126,7 +1175,7 @@ export default function LessonsPage() {
                 </button>
                 <button
                   type="button"
-                  disabled={saving}
+                  disabled={saving || uploadingMedia}
                   onClick={createHomework}
                   className="h-10 rounded-xl bg-emerald-500 px-4 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-70"
                 >

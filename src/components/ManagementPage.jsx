@@ -10,8 +10,10 @@ import {
     X,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../AuthContext.jsx';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
+import { normalizeRole } from '../utils/roles.js';
 
 const CENTER_STORAGE_KEY = 'erp_selected_center';
 const COURSE_CENTER_KEY = 'management_course_branch_map_v1';
@@ -61,6 +63,21 @@ const INITIAL_BRANCH_FORM = {
     name: '',
     phone: '',
     address: '',
+};
+
+const STAFF_ROLE_OPTIONS = [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'MANAGEMENT', label: 'Management' },
+    { value: 'ADMINSTRATOR', label: 'Administrator' },
+];
+
+const INITIAL_STAFF_FORM = {
+    fullName: '',
+    phone: '',
+    email: '',
+    password: '',
+    role: 'ADMIN',
+    position: '',
 };
 
 function safeParse(value, fallback) {
@@ -194,8 +211,11 @@ function ManagementCard({ title, children, action }) {
 }
 
 export default function ManagementPage() {
+    const { user } = useAuth();
     const navigate = useNavigate();
     const { tab } = useParams();
+    const role = normalizeRole(user?.role);
+    const canManageStaff = role === 'SUPERADMIN';
 
     const activeTab = useMemo(() => {
         if (MANAGEMENT_TABS.some((item) => item.key === tab)) return tab;
@@ -237,6 +257,12 @@ export default function ManagementPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+
+    const [staffRows, setStaffRows] = useState([]);
+    const [staffLoading, setStaffLoading] = useState(false);
+    const [staffSaving, setStaffSaving] = useState(false);
+    const [staffForm, setStaffForm] = useState(INITIAL_STAFF_FORM);
+    const [staffMessage, setStaffMessage] = useState('');
 
     const [courseScope, setCourseScope] = useState('ACTIVE');
     const [branchScope, setBranchScope] = useState('ACTIVE');
@@ -314,6 +340,85 @@ export default function ManagementPage() {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    const loadStaff = useCallback(async () => {
+        if (!canManageStaff) {
+            setStaffRows([]);
+            return;
+        }
+
+        setStaffLoading(true);
+        setError('');
+
+        try {
+            const res = await api.get('/auth/staff');
+            const payload = normalizeObject(res.data);
+            const list = Array.isArray(payload?.data) ? payload.data : normalizeList(res.data);
+            setStaffRows(Array.isArray(list) ? list : []);
+        } catch (e) {
+            setError(getApiErrorMessage(e, 'Xodimlarni yuklab bo\'lmadi'));
+            setStaffRows([]);
+        } finally {
+            setStaffLoading(false);
+        }
+    }, [canManageStaff]);
+
+    useEffect(() => {
+        if (activeTab !== 'staff') return;
+        loadStaff();
+    }, [activeTab, loadStaff]);
+
+    const createStaff = async () => {
+        const fullName = String(staffForm.fullName || '').trim();
+        const phone = String(staffForm.phone || '').trim();
+        const password = String(staffForm.password || '').trim();
+
+        if (!fullName) {
+            setError('Xodim ismi majburiy');
+            return;
+        }
+
+        if (!phone) {
+            setError('Telefon raqam majburiy');
+            return;
+        }
+
+        if (password.length < 6) {
+            setError('Parol kamida 6 belgidan iborat bo\'lishi kerak');
+            return;
+        }
+
+        setStaffSaving(true);
+        setError('');
+        setStaffMessage('');
+
+        try {
+            const payload = {
+                fullName,
+                phone,
+                password,
+                email: String(staffForm.email || '').trim() || undefined,
+                role: staffForm.role,
+                position: String(staffForm.position || '').trim() || undefined,
+            };
+
+            const res = await api.post('/auth/admins', payload);
+            const created = normalizeObject(res.data);
+            const roleLabel = String(created?.user?.role || payload.role || 'ADMIN');
+            setStaffMessage(`Yangi xodim yaratildi: ${roleLabel}`);
+
+            setStaffForm((prev) => ({
+                ...INITIAL_STAFF_FORM,
+                role: prev.role,
+            }));
+
+            await loadStaff();
+        } catch (e) {
+            setError(getApiErrorMessage(e, 'Xodim yaratishda xatolik'));
+        } finally {
+            setStaffSaving(false);
+        }
+    };
 
     const activeCourses = useMemo(() => (
         courses
@@ -873,6 +978,149 @@ export default function ManagementPage() {
         </ManagementCard>
     );
 
+    const renderStaff = canManageStaff ? (
+        <div className="space-y-4">
+            <ManagementCard
+                title="Yangi xodim qo'shish"
+                action={(
+                    <button
+                        type="button"
+                        onClick={createStaff}
+                        disabled={staffSaving}
+                        className="h-10 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white disabled:opacity-70"
+                    >
+                        {staffSaving ? 'Saqlanmoqda...' : 'Xodim yaratish'}
+                    </button>
+                )}
+            >
+                <div className="grid gap-3 md:grid-cols-2">
+                    <label className="space-y-1 text-sm text-slate-600">
+                        <span>To'liq ism</span>
+                        <input
+                            value={staffForm.fullName}
+                            onChange={(event) => setStaffForm((prev) => ({ ...prev, fullName: event.target.value }))}
+                            className="h-11 w-full rounded-xl border border-[#dfe4ef] px-3"
+                            placeholder="Masalan: Ali Valiyev"
+                        />
+                    </label>
+
+                    <label className="space-y-1 text-sm text-slate-600">
+                        <span>Telefon</span>
+                        <input
+                            value={staffForm.phone}
+                            onChange={(event) => setStaffForm((prev) => ({ ...prev, phone: event.target.value }))}
+                            className="h-11 w-full rounded-xl border border-[#dfe4ef] px-3"
+                            placeholder="+998901234567"
+                        />
+                    </label>
+
+                    <label className="space-y-1 text-sm text-slate-600">
+                        <span>Email (ixtiyoriy)</span>
+                        <input
+                            value={staffForm.email}
+                            onChange={(event) => setStaffForm((prev) => ({ ...prev, email: event.target.value }))}
+                            className="h-11 w-full rounded-xl border border-[#dfe4ef] px-3"
+                            placeholder="staff@edu.uz"
+                        />
+                    </label>
+
+                    <label className="space-y-1 text-sm text-slate-600">
+                        <span>Parol</span>
+                        <input
+                            type="password"
+                            value={staffForm.password}
+                            onChange={(event) => setStaffForm((prev) => ({ ...prev, password: event.target.value }))}
+                            className="h-11 w-full rounded-xl border border-[#dfe4ef] px-3"
+                            placeholder="Kamida 6 belgi"
+                        />
+                    </label>
+
+                    <label className="space-y-1 text-sm text-slate-600">
+                        <span>Rol</span>
+                        <select
+                            value={staffForm.role}
+                            onChange={(event) => setStaffForm((prev) => ({ ...prev, role: event.target.value }))}
+                            className="h-11 w-full rounded-xl border border-[#dfe4ef] px-3"
+                        >
+                            {STAFF_ROLE_OPTIONS.map((item) => (
+                                <option key={item.value} value={item.value}>{item.label}</option>
+                            ))}
+                        </select>
+                    </label>
+
+                    <label className="space-y-1 text-sm text-slate-600">
+                        <span>Lavozim (ixtiyoriy)</span>
+                        <input
+                            value={staffForm.position}
+                            onChange={(event) => setStaffForm((prev) => ({ ...prev, position: event.target.value }))}
+                            className="h-11 w-full rounded-xl border border-[#dfe4ef] px-3"
+                            placeholder="Administrator"
+                        />
+                    </label>
+                </div>
+
+                {staffMessage && (
+                    <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        {staffMessage}
+                    </div>
+                )}
+            </ManagementCard>
+
+            <ManagementCard
+                title="Xodimlar ro'yxati"
+                action={(
+                    <button
+                        type="button"
+                        onClick={loadStaff}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#dfe4ef] text-slate-500"
+                        title="Yangilash"
+                    >
+                        <RefreshCcw size={15} />
+                    </button>
+                )}
+            >
+                {staffLoading ? (
+                    <div className="py-10 text-center">
+                        <Loader2 size={22} className="mx-auto animate-spin text-violet-500" />
+                    </div>
+                ) : staffRows.length ? (
+                    <div className="overflow-x-auto rounded-2xl border border-[#e4e9f3] bg-white">
+                        <table className="w-full min-w-180">
+                            <thead>
+                                <tr className="border-b border-[#edf1f8] text-left">
+                                    <th className="px-4 py-3 text-sm font-semibold text-slate-800">#</th>
+                                    <th className="px-4 py-3 text-sm font-semibold text-slate-800">Ism</th>
+                                    <th className="px-4 py-3 text-sm font-semibold text-slate-800">Rol</th>
+                                    <th className="px-4 py-3 text-sm font-semibold text-slate-800">Telefon</th>
+                                    <th className="px-4 py-3 text-sm font-semibold text-slate-800">Email</th>
+                                    <th className="px-4 py-3 text-sm font-semibold text-slate-800">Holat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {staffRows.map((row, index) => (
+                                    <tr key={row.id || `${row.email}-${index}`} className="border-b border-[#f2f5fa] last:border-b-0">
+                                        <td className="px-4 py-3 text-sm text-slate-600">{index + 1}</td>
+                                        <td className="px-4 py-3 text-sm font-medium text-slate-900">{row.fullName || '--'}</td>
+                                        <td className="px-4 py-3 text-sm text-slate-700">{row.role || '--'}</td>
+                                        <td className="px-4 py-3 text-sm text-slate-700">{row.phone || '--'}</td>
+                                        <td className="px-4 py-3 text-sm text-slate-700">{row.email || '--'}</td>
+                                        <td className="px-4 py-3 text-sm text-slate-700">{row.status || '--'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <p className="py-8 text-center text-slate-500">Hozircha xodimlar yo'q</p>
+                )}
+            </ManagementCard>
+        </div>
+    ) : (
+        <ManagementCard title="Xodimlar" action={null}>
+            <p className="py-8 text-center text-slate-500">Xodim qo'shish faqat superadmin uchun ruxsat etilgan.</p>
+        </ManagementCard>
+    );
+
     return (
         <div className="space-y-4">
             <h1 className="text-5xl font-semibold text-slate-900">Boshqarish</h1>
@@ -901,8 +1149,9 @@ export default function ManagementPage() {
             {activeTab === 'courses' && renderCourses}
             {activeTab === 'rooms' && renderRooms}
             {activeTab === 'branch' && renderBranches}
+            {activeTab === 'staff' && renderStaff}
 
-            {!['courses', 'rooms', 'branch'].includes(activeTab) && (
+            {!['courses', 'rooms', 'branch', 'staff'].includes(activeTab) && (
                 <ManagementCard
                     title={MANAGEMENT_TABS.find((item) => item.key === activeTab)?.label || "Bo'lim"}
                     action={(
