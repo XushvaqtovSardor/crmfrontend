@@ -1,9 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ExternalLink, Loader2, Paperclip, Play, SendHorizontal } from 'lucide-react';
+import { ExternalLink, Loader2, Paperclip, SendHorizontal } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
 import { getAttachmentLabel, parseAttachment, serializeAttachment } from '../utils/attachments.js';
+
+const API_ORIGIN = String(import.meta.env.VITE_API_URL || '')
+    .trim()
+    .replace(/\/api\/v1\/?$/i, '')
+    .replace(/\/$/, '');
+
+function resolveAssetUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^(https?:)?\/\//i.test(raw) || raw.startsWith('data:')) {
+        return raw;
+    }
+
+    const normalizedPath = raw.startsWith('/') ? raw : `/${raw}`;
+    return API_ORIGIN ? `${API_ORIGIN}${normalizedPath}` : normalizedPath;
+}
+
+function isPlayableVideoLink(link) {
+    const source = String(link || '').trim().split('?')[0].toLowerCase();
+    return /\.(mp4|webm|ogg|mov|m4v|mkv|avi)$/.test(source);
+}
 
 function formatDate(value) {
     if (!value) return '--';
@@ -23,10 +44,12 @@ export default function StudentLessonDetailsPage() {
     const navigate = useNavigate();
 
     const fileRef = useRef(null);
+    const videoRef = useRef(null);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [activeVideoId, setActiveVideoId] = useState(null);
 
     const [group, setGroup] = useState(null);
     const [dashboardHomeworks, setDashboardHomeworks] = useState([]);
@@ -78,9 +101,82 @@ export default function StudentLessonDetailsPage() {
 
     const homeworkState = useMemo(() => {
         if (!homework) return null;
-        const row = dashboardHomeworks.find((item) => item.id === homework.id);
+        const row = dashboardHomeworks.find((item) => String(item.id) === String(homework.id));
         return row || null;
     }, [dashboardHomeworks, homework]);
+
+    const videoRows = useMemo(() => {
+        const rows = Array.isArray(lesson?.lessonVideos) ? lesson.lessonVideos : [];
+
+        return rows.map((video, index) => {
+            const attachmentInfo = parseAttachment(video.file);
+            const resolvedLink = resolveAssetUrl(attachmentInfo.link);
+
+            return {
+                ...video,
+                title: video.title || `Video ${index + 1}`,
+                label: getAttachmentLabel(video.file),
+                link: resolvedLink,
+                hasPlayableLink: Boolean(resolvedLink && isPlayableVideoLink(resolvedLink)),
+            };
+        });
+    }, [lesson]);
+
+    const playableVideos = useMemo(
+        () => videoRows.filter((row) => row.hasPlayableLink),
+        [videoRows],
+    );
+
+    const nonVideoAttachments = useMemo(
+        () => videoRows.filter((row) => !row.hasPlayableLink),
+        [videoRows],
+    );
+
+    const activeVideo = useMemo(() => {
+        if (playableVideos.length === 0) {
+            return null;
+        }
+
+        const matched = playableVideos.find((row) => String(row.id) === String(activeVideoId));
+        return matched || playableVideos[0];
+    }, [playableVideos, activeVideoId]);
+
+    const homeworkAttachment = useMemo(() => {
+        const attachmentInfo = parseAttachment(homework?.file);
+        return {
+            ...attachmentInfo,
+            label: getAttachmentLabel(homework?.file),
+            link: resolveAssetUrl(attachmentInfo.link),
+        };
+    }, [homework]);
+
+    useEffect(() => {
+        if (!playableVideos.length) {
+            setActiveVideoId(null);
+            return;
+        }
+
+        const hasActive = playableVideos.some((row) => String(row.id) === String(activeVideoId));
+        if (!hasActive) {
+            setActiveVideoId(playableVideos[0].id);
+        }
+    }, [playableVideos, activeVideoId]);
+
+    const openVideo = (videoId) => {
+        if (String(videoId) === String(activeVideoId)) {
+            return;
+        }
+
+        setActiveVideoId(videoId);
+
+        window.requestAnimationFrame(() => {
+            if (!videoRef.current) return;
+
+            videoRef.current.play().catch(() => {
+                // Browser autoplay policy may block direct play after source switch.
+            });
+        });
+    };
 
     const handleAttach = (event) => {
         const file = event.target.files?.[0];
@@ -141,41 +237,131 @@ export default function StudentLessonDetailsPage() {
                             <p className="text-sm text-gray-500 mt-2">Sana: {formatDate(lesson.created_at || lesson.createdAt)}</p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {(Array.isArray(lesson.lessonVideos) ? lesson.lessonVideos : []).map((video, index) => {
-                                const attachmentInfo = parseAttachment(video.file);
+                        {activeVideo ? (
+                            <section className="rounded-2xl border border-[#dce1ea] bg-white p-3 sm:p-4 space-y-3">
+                                <div className="overflow-hidden rounded-2xl border border-[#e4e9f3] bg-black">
+                                    <video
+                                        key={activeVideo.id}
+                                        ref={videoRef}
+                                        controls
+                                        preload="metadata"
+                                        src={activeVideo.link}
+                                        className="aspect-video w-full"
+                                    />
+                                </div>
 
-                                return (
-                                    <article key={video.id} className="rounded-2xl border border-[#dce1ea] bg-white overflow-hidden">
-                                        <div className="h-44 bg-linear-to-br from-[#dbe4ff] via-[#eff3ff] to-[#f7f9ff] flex items-center justify-center">
-                                            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-[#6d7ba7]">
-                                                <Play size={20} />
-                                            </span>
-                                        </div>
-                                        <div className="px-4 py-3">
-                                            <p className="text-sm font-semibold text-gray-800 line-clamp-1">{video.title || `Video ${index + 1}`}</p>
-                                            <p className="text-xs text-gray-500 mt-1 line-clamp-1">{getAttachmentLabel(video.file)}</p>
-                                            {attachmentInfo.link && (
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-900">{activeVideo.title}</p>
+                                        <p className="text-xs text-gray-500">{activeVideo.label}</p>
+                                    </div>
+                                    <span className="text-xs text-gray-500">Video avtomatik ko'rsatilmoqda</span>
+                                </div>
+                            </section>
+                        ) : (
+                            <div className="rounded-2xl border border-dashed border-[#d7dce6] bg-white px-4 py-8 text-sm text-gray-500 text-center">
+                                Bu darsga oynatiladigan video biriktirilmagan
+                            </div>
+                        )}
+
+                        {videoRows.length > 0 && (
+                            <section className="rounded-2xl border border-[#dce1ea] bg-white p-3 sm:p-4">
+                                <h2 className="text-sm font-semibold text-gray-800 mb-3">Dars materiallari</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {videoRows.map((video) => {
+                                        const isActive = String(video.id) === String(activeVideo?.id);
+
+                                        return (
+                                            <article
+                                                key={video.id}
+                                                onClick={video.hasPlayableLink ? () => openVideo(video.id) : undefined}
+                                                className={`rounded-xl border p-3 ${isActive ? 'border-[#d58d45] bg-[#fff8ef]' : 'border-[#e2e7f1] bg-white'} ${video.hasPlayableLink ? 'cursor-pointer hover:border-[#d5dee9]' : ''}`}
+                                            >
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-semibold text-gray-900 truncate">{video.title}</p>
+                                                        <p className="text-xs text-gray-500 truncate mt-0.5">{video.label}</p>
+                                                    </div>
+                                                    <span className={`rounded-md px-2 py-1 text-[10px] font-semibold ${video.hasPlayableLink ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                        {video.hasPlayableLink ? 'VIDEO' : 'FAYL'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="mt-3 flex items-center gap-2">
+                                                    {video.hasPlayableLink ? (
+                                                        <span className="text-xs text-gray-500">
+                                                            {isActive ? "Tanlangan video" : "Ko'rish uchun kartani bosing"}
+                                                        </span>
+                                                    ) : null}
+
+                                                    {video.link && (
+                                                        <a
+                                                            href={video.link}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            onClick={(event) => event.stopPropagation()}
+                                                            className="inline-flex h-8 items-center gap-1 rounded-lg border border-[#dce2ec] bg-white px-3 text-xs font-semibold text-[#a65f23]"
+                                                        >
+                                                            Ochish <ExternalLink size={12} />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </article>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        )}
+
+                        {(nonVideoAttachments.length > 0 || homeworkAttachment.fileName || homeworkAttachment.link) && (
+                            <section className="rounded-2xl border border-[#dce1ea] bg-white p-4 space-y-2">
+                                <h2 className="text-base font-semibold text-gray-900">Biriktirilgan fayllar</h2>
+
+                                <div className="space-y-2">
+                                    {nonVideoAttachments.map((item) => (
+                                        <div key={`lesson-file-${item.id}`} className="rounded-xl border border-[#e5eaf4] bg-[#fbfcff] px-3 py-2 flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Dars materiali</p>
+                                                <p className="text-sm font-medium text-gray-800 truncate">{item.label}</p>
+                                            </div>
+                                            {item.link ? (
                                                 <a
-                                                    href={attachmentInfo.link}
+                                                    href={item.link}
                                                     target="_blank"
                                                     rel="noreferrer"
-                                                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#a65f23]"
+                                                    className="text-xs font-semibold text-[#a65f23] inline-flex items-center gap-1 whitespace-nowrap"
                                                 >
-                                                    Videoni ochish <ExternalLink size={13} />
+                                                    Ochish <ExternalLink size={12} />
                                                 </a>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">Link mavjud emas</span>
                                             )}
                                         </div>
-                                    </article>
-                                );
-                            })}
-                        </div>
+                                    ))}
 
-                        {!Array.isArray(lesson.lessonVideos) || lesson.lessonVideos.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-[#d7dce6] bg-white px-4 py-8 text-sm text-gray-500 text-center">
-                                Bu darsga video biriktirilmagan
-                            </div>
-                        ) : null}
+                                    {(homeworkAttachment.fileName || homeworkAttachment.link) && (
+                                        <div className="rounded-xl border border-[#e5eaf4] bg-[#fbfcff] px-3 py-2 flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Uyga vazifa fayli</p>
+                                                <p className="text-sm font-medium text-gray-800 truncate">{homeworkAttachment.label}</p>
+                                            </div>
+                                            {homeworkAttachment.link ? (
+                                                <a
+                                                    href={homeworkAttachment.link}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-xs font-semibold text-[#a65f23] inline-flex items-center gap-1 whitespace-nowrap"
+                                                >
+                                                    Ochish <ExternalLink size={12} />
+                                                </a>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">Link mavjud emas</span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+                        )}
 
                         <section className="rounded-2xl border border-[#dce1ea] bg-white p-4 space-y-3">
                             <h2 className="text-lg font-semibold text-gray-900">Uyga vazifa</h2>
@@ -188,21 +374,16 @@ export default function StudentLessonDetailsPage() {
                                         <div>
                                             <p className="text-sm font-semibold text-gray-800">{homework.title || `Homework ${homework.id}`}</p>
                                             <p className="text-xs text-gray-500 mt-1">Deadline: {formatDate(homework.deadlineAt)}</p>
-                                            {(() => {
-                                                const attachmentInfo = parseAttachment(homework.file);
-                                                if (!attachmentInfo.fileName && !attachmentInfo.link) return null;
-
-                                                return (
-                                                    <div className="mt-1 inline-flex items-center gap-2 text-xs text-gray-600">
-                                                        <span>{getAttachmentLabel(homework.file)}</span>
-                                                        {attachmentInfo.link && (
-                                                            <a href={attachmentInfo.link} target="_blank" rel="noreferrer" className="text-[#a86429] inline-flex items-center">
-                                                                <ExternalLink size={13} />
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })()}
+                                            {(homeworkAttachment.fileName || homeworkAttachment.link) && (
+                                                <div className="mt-1 inline-flex items-center gap-2 text-xs text-gray-600">
+                                                    <span>{homeworkAttachment.label}</span>
+                                                    {homeworkAttachment.link && (
+                                                        <a href={homeworkAttachment.link} target="_blank" rel="noreferrer" className="text-[#a86429] inline-flex items-center">
+                                                            <ExternalLink size={13} />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                         {homeworkState?.submitted ? (
                                             <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Topshirilgan</span>

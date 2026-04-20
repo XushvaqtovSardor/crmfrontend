@@ -65,6 +65,11 @@ function formatDateTime(value) {
   });
 }
 
+function isPlayableVideoLink(link) {
+  const source = String(link || '').trim().split('?')[0].toLowerCase();
+  return /\.(mp4|webm|ogg|mov|m4v|mkv|avi)$/.test(source);
+}
+
 function sortByDateAsc(left, right, key = 'created_at') {
   const leftTime = new Date(left?.[key] || 0).getTime();
   const rightTime = new Date(right?.[key] || 0).getTime();
@@ -469,6 +474,11 @@ export default function LessonsPage() {
     }
     if (!videoForm.fileName.trim() && !videoForm.link.trim()) {
       setError("Video uchun fayl yoki link kiriting");
+      return;
+    }
+
+    if (videoForm.link.trim() && !isPlayableVideoLink(videoForm.link)) {
+      setError('Video link bevosita video faylga ishora qilishi kerak (.mp4, .webm, .mov, ...)');
       return;
     }
 
@@ -1130,7 +1140,7 @@ export default function LessonsPage() {
                   <input
                     ref={homeworkInputRef}
                     type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z,.jpg,.jpeg,.png,video/*"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z,.jpg,.jpeg,.png"
                     className="hidden"
                     onChange={(event) => onHomeworkFileSelected(event.target.files?.[0])}
                   />

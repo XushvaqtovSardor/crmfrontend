@@ -98,6 +98,16 @@ export default function StudentNotificationsPage() {
                     body: `${item.title || 'Uyga vazifa'} bo'yicha baho: ${item.score}`,
                     createdAt: item.reviewedAt || item.createdAt,
                 });
+
+                if (Number(item.teacherCoinAward || 0) > 0) {
+                    list.push({
+                        id: `submission-coin-${item.id}`,
+                        type: 'UNREAD',
+                        title: 'Coin hisoblandi',
+                        body: `${item.title || 'Uyga vazifa'} natijasiga ko'ra ustozga +${item.teacherCoinAward} coin berildi`,
+                        createdAt: item.reviewedAt || item.createdAt,
+                    });
+                }
             }
         });
 

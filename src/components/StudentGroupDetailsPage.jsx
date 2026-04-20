@@ -6,6 +6,7 @@ import { getApiErrorMessage } from '../utils/http.js';
 
 const FILTER_OPTIONS = [
     { value: 'ALL', label: 'Barchasi' },
+    { value: 'ASSIGNED', label: 'Berildi' },
     { value: 'ACCEPTED', label: 'Qabul qilingan' },
     { value: 'MISSED', label: 'Bajarilmagan' },
     { value: 'NOT_ASSIGNED', label: 'Berilmagan' },
@@ -20,6 +21,7 @@ function formatDate(value) {
 
 function statusToClass(status) {
     if (status === 'ACCEPTED') return 'bg-emerald-100 text-emerald-700';
+    if (status === 'ASSIGNED') return 'bg-amber-100 text-amber-700';
     if (status === 'MISSED') return 'bg-red-100 text-red-700';
     return 'bg-slate-100 text-slate-700';
 }
@@ -29,10 +31,15 @@ function isExamLesson(lesson) {
     return title.includes('imtihon') || title.includes('exam') || title.includes('sinov');
 }
 
+function hasHomeworkContent(homework) {
+    return Boolean(String(homework?.title || '').trim() || String(homework?.file || '').trim());
+}
+
 function normalizeLessonStatus(lesson, dashboardByHomeworkId) {
     const homeworkList = Array.isArray(lesson?.homework) ? lesson.homework : [];
+    const assignedHomeworkList = homeworkList.filter((item) => hasHomeworkContent(item));
 
-    if (!homeworkList.length) {
+    if (!assignedHomeworkList.length) {
         return { code: 'NOT_ASSIGNED', label: 'Berilmagan', deadline: null };
     }
 
@@ -40,7 +47,7 @@ function normalizeLessonStatus(lesson, dashboardByHomeworkId) {
     let overdueUnsubmitted = false;
     let nearestDeadline = null;
 
-    homeworkList.forEach((hw) => {
+    assignedHomeworkList.forEach((hw) => {
         const dashboardHomework = dashboardByHomeworkId.get(hw.id);
         if (dashboardHomework?.submitted) {
             submittedCount += 1;
@@ -60,7 +67,7 @@ function normalizeLessonStatus(lesson, dashboardByHomeworkId) {
         }
     });
 
-    if (submittedCount === homeworkList.length) {
+    if (submittedCount === assignedHomeworkList.length) {
         return { code: 'ACCEPTED', label: 'Qabul qilingan', deadline: nearestDeadline };
     }
 
@@ -68,7 +75,7 @@ function normalizeLessonStatus(lesson, dashboardByHomeworkId) {
         return { code: 'MISSED', label: 'Bajarilmagan', deadline: nearestDeadline };
     }
 
-    return { code: 'NOT_ASSIGNED', label: 'Berilmagan', deadline: nearestDeadline };
+    return { code: 'ASSIGNED', label: 'Berildi', deadline: nearestDeadline };
 }
 
 function normalizeDashboardHomework(data) {
