@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ExternalLink, Loader2, Paperclip, SendHorizontal } from 'lucide-react';
+import { Download, Loader2, Paperclip, SendHorizontal } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
@@ -114,7 +114,7 @@ export default function StudentLessonDetailsPage() {
 
             return {
                 ...video,
-                title: video.title || `Video ${index + 1}`,
+                title: video.title || `${index + 1}-video`,
                 label: getAttachmentLabel(video.file),
                 link: resolvedLink,
                 hasPlayableLink: Boolean(resolvedLink && isPlayableVideoLink(resolvedLink)),
@@ -254,6 +254,15 @@ export default function StudentLessonDetailsPage() {
                                     <div>
                                         <p className="text-sm font-semibold text-gray-900">{activeVideo.title}</p>
                                         <p className="text-xs text-gray-500">{activeVideo.label}</p>
+                                        {activeVideo.link && (
+                                            <a
+                                                href={activeVideo.link}
+                                                download={activeVideo.label || undefined}
+                                                className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#a65f23]"
+                                            >
+                                                Faylni yuklab olish <Download size={12} />
+                                            </a>
+                                        )}
                                     </div>
                                     <span className="text-xs text-gray-500">Video avtomatik ko'rsatilmoqda</span>
                                 </div>
@@ -297,12 +306,11 @@ export default function StudentLessonDetailsPage() {
                                                     {video.link && (
                                                         <a
                                                             href={video.link}
-                                                            target="_blank"
-                                                            rel="noreferrer"
+                                                            download={video.label || undefined}
                                                             onClick={(event) => event.stopPropagation()}
                                                             className="inline-flex h-8 items-center gap-1 rounded-lg border border-[#dce2ec] bg-white px-3 text-xs font-semibold text-[#a65f23]"
                                                         >
-                                                            Ochish <ExternalLink size={12} />
+                                                            Yuklab olish <Download size={12} />
                                                         </a>
                                                     )}
                                                 </div>
@@ -327,11 +335,10 @@ export default function StudentLessonDetailsPage() {
                                             {item.link ? (
                                                 <a
                                                     href={item.link}
-                                                    target="_blank"
-                                                    rel="noreferrer"
+                                                    download={item.label || undefined}
                                                     className="text-xs font-semibold text-[#a65f23] inline-flex items-center gap-1 whitespace-nowrap"
                                                 >
-                                                    Ochish <ExternalLink size={12} />
+                                                    Yuklab olish <Download size={12} />
                                                 </a>
                                             ) : (
                                                 <span className="text-xs text-gray-400">Link mavjud emas</span>
@@ -348,11 +355,10 @@ export default function StudentLessonDetailsPage() {
                                             {homeworkAttachment.link ? (
                                                 <a
                                                     href={homeworkAttachment.link}
-                                                    target="_blank"
-                                                    rel="noreferrer"
+                                                    download={homeworkAttachment.label || undefined}
                                                     className="text-xs font-semibold text-[#a65f23] inline-flex items-center gap-1 whitespace-nowrap"
                                                 >
-                                                    Ochish <ExternalLink size={12} />
+                                                    Yuklab olish <Download size={12} />
                                                 </a>
                                             ) : (
                                                 <span className="text-xs text-gray-400">Link mavjud emas</span>
@@ -378,8 +384,12 @@ export default function StudentLessonDetailsPage() {
                                                 <div className="mt-1 inline-flex items-center gap-2 text-xs text-gray-600">
                                                     <span>{homeworkAttachment.label}</span>
                                                     {homeworkAttachment.link && (
-                                                        <a href={homeworkAttachment.link} target="_blank" rel="noreferrer" className="text-[#a86429] inline-flex items-center">
-                                                            <ExternalLink size={13} />
+                                                        <a
+                                                            href={homeworkAttachment.link}
+                                                            download={homeworkAttachment.label || undefined}
+                                                            className="text-[#a86429] inline-flex items-center"
+                                                        >
+                                                            <Download size={13} />
                                                         </a>
                                                     )}
                                                 </div>

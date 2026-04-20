@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
   CalendarDays,
+  Download,
   ExternalLink,
   FileVideo2,
   GraduationCap,
@@ -63,11 +64,6 @@ function formatDateTime(value) {
     hour: '2-digit',
     minute: '2-digit',
   });
-}
-
-function isPlayableVideoLink(link) {
-  const source = String(link || '').trim().split('?')[0].toLowerCase();
-  return /\.(mp4|webm|ogg|mov|m4v|mkv|avi)$/.test(source);
 }
 
 function sortByDateAsc(left, right, key = 'created_at') {
@@ -477,11 +473,6 @@ export default function LessonsPage() {
       return;
     }
 
-    if (videoForm.link.trim() && !isPlayableVideoLink(videoForm.link)) {
-      setError('Video link bevosita video faylga ishora qilishi kerak (.mp4, .webm, .mov, ...)');
-      return;
-    }
-
     const attachment = serializeAttachment({
       fileName: videoForm.fileName,
       link: videoForm.link,
@@ -860,7 +851,7 @@ export default function LessonsPage() {
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">#</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Video nomi</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Dars</th>
-                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Link</th>
+                    <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Fayl</th>
                     <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500">Qoshilgan vaqti</th>
                   </tr>
                 </thead>
@@ -874,7 +865,9 @@ export default function LessonsPage() {
                         <td className="py-3 px-4 text-sm text-gray-800">
                           <div className="inline-flex items-center gap-2">
                             <Video size={15} className="text-emerald-500" />
-                            <span className="underline decoration-dotted underline-offset-2">{getAttachmentLabel(video.file)}</span>
+                            <span className="underline decoration-dotted underline-offset-2">
+                              {`${video.orderInLesson}-video: ${getAttachmentLabel(video.file)}`}
+                            </span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-700">{video.lessonTitle}</td>
@@ -882,11 +875,10 @@ export default function LessonsPage() {
                           {attachment.link ? (
                             <a
                               href={attachment.link}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-emerald-600 inline-flex items-center gap-1"
+                              download={attachment.fileName || undefined}
+                              className="text-emerald-600 inline-flex items-center gap-1 font-semibold"
                             >
-                              Ochish <ExternalLink size={14} />
+                              Yuklab olish <Download size={14} />
                             </a>
                           ) : '--'}
                         </td>
@@ -995,7 +987,6 @@ export default function LessonsPage() {
                 <input
                   ref={videoInputRef}
                   type="file"
-                  accept="video/*"
                   className="hidden"
                   onChange={(event) => onVideoFileSelected(event.target.files?.[0])}
                 />

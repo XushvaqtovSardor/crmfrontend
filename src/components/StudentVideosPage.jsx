@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ExternalLink, Loader2, PlayCircle, Search } from 'lucide-react';
+import { Download, ExternalLink, Loader2, PlayCircle, Search } from 'lucide-react';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
 import { getAttachmentLabel, parseAttachment } from '../utils/attachments.js';
@@ -118,15 +118,28 @@ export default function StudentVideosPage() {
                                             />
                                         )}
 
-                                        <a
-                                            href={attachment.link}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#b76d2e] hover:text-[#9d5c26]"
-                                        >
-                                            {canPreview ? "Videoni alohida ochish" : 'Videoni ochish'}
-                                            <ExternalLink size={14} />
-                                        </a>
+                                        <p className="text-xs text-gray-500 break-all">{getAttachmentLabel(video.file)}</p>
+
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            <a
+                                                href={attachment.link}
+                                                download={attachment.fileName || undefined}
+                                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#b76d2e] hover:text-[#9d5c26]"
+                                            >
+                                                Yuklab olish
+                                                <Download size={14} />
+                                            </a>
+
+                                            <a
+                                                href={attachment.link}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-gray-800"
+                                            >
+                                                Ochish
+                                                <ExternalLink size={14} />
+                                            </a>
+                                        </div>
                                     </div>
                                 ) : (
                                     <p className="mt-4 text-sm text-gray-500 break-all">{getAttachmentLabel(video.file)}</p>
