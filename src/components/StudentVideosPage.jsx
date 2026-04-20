@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Download, ExternalLink, Loader2, PlayCircle, Search } from 'lucide-react';
+import { ExternalLink, Loader2, PlayCircle, Search } from 'lucide-react';
 import api from '../api.js';
 import { getApiErrorMessage } from '../utils/http.js';
 import { getAttachmentLabel, parseAttachment } from '../utils/attachments.js';
@@ -112,6 +112,7 @@ export default function StudentVideosPage() {
                                         {canPreview && (
                                             <video
                                                 controls
+                                                controlsList="nodownload"
                                                 preload="metadata"
                                                 src={attachment.link}
                                                 className="w-full rounded-xl border border-[#e5e9f2] bg-black/90"
@@ -123,20 +124,11 @@ export default function StudentVideosPage() {
                                         <div className="flex flex-wrap items-center gap-3">
                                             <a
                                                 href={attachment.link}
-                                                download={attachment.fileName || undefined}
-                                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#b76d2e] hover:text-[#9d5c26]"
-                                            >
-                                                Yuklab olish
-                                                <Download size={14} />
-                                            </a>
-
-                                            <a
-                                                href={attachment.link}
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-gray-800"
                                             >
-                                                Ochish
+                                                Ko'rish
                                                 <ExternalLink size={14} />
                                             </a>
                                         </div>

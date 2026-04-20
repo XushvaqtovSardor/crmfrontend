@@ -244,6 +244,7 @@ export default function StudentLessonDetailsPage() {
                                         key={activeVideo.id}
                                         ref={videoRef}
                                         controls
+                                        controlsList="nodownload"
                                         preload="metadata"
                                         src={activeVideo.link}
                                         className="aspect-video w-full"
@@ -254,15 +255,6 @@ export default function StudentLessonDetailsPage() {
                                     <div>
                                         <p className="text-sm font-semibold text-gray-900">{activeVideo.title}</p>
                                         <p className="text-xs text-gray-500">{activeVideo.label}</p>
-                                        {activeVideo.link && (
-                                            <a
-                                                href={activeVideo.link}
-                                                download={activeVideo.label || undefined}
-                                                className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#a65f23]"
-                                            >
-                                                Faylni yuklab olish <Download size={12} />
-                                            </a>
-                                        )}
                                     </div>
                                     <span className="text-xs text-gray-500">Video avtomatik ko'rsatilmoqda</span>
                                 </div>
@@ -303,7 +295,7 @@ export default function StudentLessonDetailsPage() {
                                                         </span>
                                                     ) : null}
 
-                                                    {video.link && (
+                                                    {!video.hasPlayableLink && video.link && (
                                                         <a
                                                             href={video.link}
                                                             download={video.label || undefined}
