@@ -139,7 +139,7 @@ function StatCard({ title, value, icon: Icon }) {
 
 function AccordionBlock({ title, open, onToggle, children }) {
     return (
-        <section className="rounded-2xl border border-emerald-900/35 bg-[#0f1713] shadow-sm overflow-hidden">
+        <section className="self-start h-fit rounded-2xl border border-emerald-900/35 bg-[#0f1713] shadow-sm overflow-hidden">
             <button
                 type="button"
                 onClick={onToggle}
@@ -614,7 +614,7 @@ export default function AdminDashboard() {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.08fr_1fr]">
+            <div className="grid items-start grid-cols-1 gap-5 xl:grid-cols-[1.08fr_1fr]">
                 <AccordionBlock
                     title="Joriy oy uchun to'lovlar"
                     open={expanded.payments}

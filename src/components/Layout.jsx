@@ -8,6 +8,8 @@ const SIDEBAR_ITEMS = {
     { name: 'Asosiy', icon: Home, path: '/dashboard' },
     { name: "O'qituvchilar", icon: Users, path: '/teachers' },
     { name: 'Guruhlar', icon: Layers3, path: '/groups' },
+    { name: 'Darslar', icon: BookOpen, path: '/lessons' },
+    { name: 'Vazifalar', icon: GraduationCap, path: '/homeworks' },
     { name: 'Talabalar', icon: GraduationCap, path: '/students' },
     { name: 'Kurslar', icon: BookOpen, path: '/management/courses' },
     { name: 'Xonalar', icon: DoorOpen, path: '/rooms' },

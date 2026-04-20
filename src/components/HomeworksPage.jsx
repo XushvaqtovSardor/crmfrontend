@@ -78,7 +78,7 @@ export default function HomeworksPage() {
   const { user } = useAuth();
   const role = normalizeRole(user?.role);
 
-  if (role === 'TEACHER') return <TeacherHomeworks />;
+  if (role === 'TEACHER' || role === 'SUPERADMIN') return <TeacherHomeworks />;
   if (role === 'STUDENT') return <StudentHomeworks />;
   return <p className="text-gray-500">Bu sahifaga ruxsat yo'q</p>;
 }

@@ -142,7 +142,7 @@ function App() {
             } />
 
             <Route path="/lessons" element={
-              <AuthenticatedLayout allowedRoles={['TEACHER']}>
+              <AuthenticatedLayout allowedRoles={['TEACHER', 'SUPERADMIN']}>
                 <LessonsPage />
               </AuthenticatedLayout>
             } />
@@ -202,7 +202,7 @@ function App() {
             } />
 
             <Route path="/homeworks" element={
-              <AuthenticatedLayout allowedRoles={['TEACHER', 'STUDENT']}>
+              <AuthenticatedLayout allowedRoles={['TEACHER', 'STUDENT', 'SUPERADMIN']}>
                 <HomeworksPage />
               </AuthenticatedLayout>
             } />
