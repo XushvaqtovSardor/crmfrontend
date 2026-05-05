@@ -63,3 +63,43 @@ body {
     transform: translateY(0) scale(1);
   }
 }
+
+.logo-marquee {
+  overflow: hidden;
+  width: 100%;
+  padding-top: 160px;
+  padding-bottom: 6px;
+}
+
+.logo-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  animation: logoMarquee 36s linear infinite;
+  will-change: transform;
+}
+
+.logo-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(10, 40, 30, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+@keyframes logoMarquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}

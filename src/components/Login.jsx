@@ -7,10 +7,36 @@ import { getDefaultRouteByRole, normalizeRole } from '../utils/roles.js';
 
 const CONTACT_EMAIL = 'EMAIL';
 const CONTACT_PHONE = 'PHONE';
-const loginImageModules = import.meta.glob('../assets/login*.{png,jpg,jpeg,webp}', { eager: true, as: 'url' });
+const loginImageModules = import.meta.glob('../assets/login*.{png,jpg,jpeg,webp}', {
+    eager: true,
+    query: '?url',
+    import: 'default',
+});
 const loginImages = Object.keys(loginImageModules)
     .sort()
     .map((key) => loginImageModules[key]);
+const logoLabels = [
+    'JavaScript',
+    'TypeScript',
+    'React',
+    'Next.js',
+    'NestJS',
+    'Angular',
+    'Python',
+    'Node.js',
+    'Express',
+    'PostgreSQL',
+    'MongoDB',
+    'Docker',
+    'Git',
+    'Vite',
+    'DevOps',
+    'Figma',
+    'C#',
+    '.NET',
+    'Go',
+];
+const logoTicker = [...logoLabels, ...logoLabels];
 
 export default function Login({ initialMode = 'login' }) {
     const normalizeMode = (value) => (value === 'register' ? 'register' : 'login');
@@ -355,6 +381,16 @@ export default function Login({ initialMode = 'login' }) {
                                 }}
                             />
                         ) : null}
+                    </div>
+
+                    <div className="relative z-10 w-full logo-marquee">
+                        <div className="logo-track">
+                            {logoTicker.map((label, index) => (
+                                <span key={`${label}-${index}`} className="logo-item">
+                                    {label}
+                                </span>
+                            ))}
+                        </div>
                     </div>
                 </aside>
 
